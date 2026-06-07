@@ -1,0 +1,279 @@
+<script>
+    let hits = 0;
+    let misses = 0;
+    let targetInterval;
+    let bgMusicInterval; // بیک گراؤنڈ میوزک کے لوپ کے لیے
+    let gameActive = false;
+    let currentPlayerName = "";
+    let currentSpawnRate = 950; // ابتدائی رفتار
+    const maxMisses = 10;
+    let musicStep = 0; // میوزک کی دھن کا ٹریک رکھنے کے لیے
+
+    const gameArea = document.getElementById('game-area');
+    const hitsDisplay = document.getElementById('hits');
+    const missesDisplay = document.getElementById('misses');
+    const instruction = document.getElementById('instruction');
+    const startBtn = document.getElementById('start-btn');
+    const nameInput = document.getElementById('player-name');
+    
+    const topPlayerDisplay = document.getElementById('top-player');
+    const topScoreDisplay = document.getElementById('top-score');
+
+    updateLeaderboardDisplay();
+
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playSound(frequency, duration, type, volume) {
+        initAudio();
+        try {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = type;
+            oscillator.frequency.value = frequency;
+            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            console.log("Audio play blocked or unsupported");
+        }
+    }
+
+    // کوڈنگ کے ذریعے ہلکا سا بیک گراؤنڈ میوزک جنریٹ کرنے والا فنکشن
+    function playBackgroundMusic() {
+        if (!gameActive) return;
+
+        // ایک خوبصورت ریٹرو گیم میلڈی (دھن) کے فریکوئنسی نوٹس
+        const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 349.23, 329.63, 293.66];
+        const currentNote = melody[musicStep % melody.length];
+
+        initAudio();
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // 'sine' ویو سے آواز بہت نرم اور ہلکی (Mellow) آتی ہے جو بیک گراؤنڈ کے لیے پرفیکٹ ہے
+            osc.type = 'sine'; 
+            osc.frequency.value = currentNote;
+            
+            // والیم کو بہت ہلکا (0.04) رکھا ہے تاکہ ہٹ اور مس کی آوازیں صاف سنائی دیں
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        } catch(e) {
+            console.log("Music error");
+        }
+
+        musicStep++;
+        // ہر 450ms بعد اگلا نوٹ چلے گا (ایک مستقل ردم)
+        bgMusicInterval = setTimeout(playBackgroundMusic, 450); 
+    }
+
+    function playBreakingSound() {
+        playSound(800, 0.15, 'triangle', 0.4);
+    }
+
+    function playMissSound() {
+        playSound(250, 0.3, 'sawtooth', 0.2);
+    }
+
+    function updateLeaderboardDisplay() {
+        const savedName = localStorage.getItem('highScoreName');
+        const savedScore = localStorage.getItem('highScoreValue');
+
+        if (savedName && savedScore) {
+            topPlayerDisplay.innerText = savedName;
+            topScoreDisplay.innerText = savedScore;
+        } else {
+            topPlayerDisplay.innerText = "No one yet";
+            topScoreDisplay.innerText = "0";
+        }
+    }
+
+    function startGame() {
+        const enteredName = nameInput.value.trim();
+        if (!enteredName) {
+            alert("Please enter your name first!");
+            return;
+        }
+
+        initAudio(); 
+        currentPlayerName = enteredName;
+        hits = 0;
+        misses = 0;
+        currentSpawnRate = 950; 
+        musicStep = 0;
+        gameActive = true;
+        
+        hitsDisplay.innerText = hits;
+        missesDisplay.innerText = misses;
+        instruction.innerHTML = `Good Luck, <strong>${currentPlayerName}</strong>! Catch the targets!`;
+        
+        startBtn.disabled = true;
+        nameInput.disabled = true;
+        gameArea.innerHTML = '';
+        
+        gameLoop();
+        playBackgroundMusic(); // یہاں سے بیک گراؤنڈ میوزک شروع ہوگا
+    }
+
+    function gameLoop() {
+        if (!gameActive) return;
+        createTarget();
+        
+        let dynamicRate = Math.max(350, currentSpawnRate - (hits * 18)); 
+        targetInterval = setTimeout(gameLoop, dynamicRate);
+    }
+
+    function createTarget() {
+        if (!gameActive) return;
+
+        const areaRect = gameArea.getBoundingClientRect();
+        const targetSize = 70;
+
+        const target = document.createElement('div');
+        target.classList.add('target');
+
+        const cartoonStyles = [
+            { emoji: '👾', anim: 'anim-pulse', bg: 'rgba(255, 71, 87, 0.2)' },          
+            { emoji: '🚀', anim: 'anim-rotate-right', bg: 'rgba(255, 165, 2, 0.2)' },   
+            { emoji: '🛸', anim: 'anim-rotate-left', bg: 'rgba(30, 144, 255, 0.2)' }, 
+            { emoji: '👻', anim: 'anim-pulse', bg: 'rgba(46, 213, 115, 0.2)' }, 
+            { emoji: '🎃', anim: 'anim-rotate-right', bg: 'rgba(236, 204, 104, 0.2)' } 
+        ];
+
+        const randomStyle = cartoonStyles[Math.floor(Math.random() * cartoonStyles.length)];
+        
+        target.innerHTML = `<span style="font-size: 40px; display: block; text-align: center; line-height: 70px;">${randomStyle.emoji}</span>`;
+        target.style.backgroundColor = randomStyle.bg;
+        target.style.borderRadius = '50%';
+        target.style.border = '2px solid rgba(255,255,255,0.4)';
+        target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+        target.style.cursor = 'pointer';
+        target.classList.add(randomStyle.anim);
+
+        const randomX = Math.random() * (areaRect.width - targetSize);
+        const randomY = Math.random() * (areaRect.height - targetSize);
+
+        target.style.left = randomX + 'px';
+        target.style.top = randomY + 'px';
+
+        let isHit = false;
+
+        target.addEventListener('mousedown', function(event) {
+            event.stopPropagation();
+            if (!isHit && gameActive) {
+                isHit = true;
+                clickedTarget(target, randomX + targetSize/2, randomY + targetSize/2);
+            }
+        });
+
+        gameArea.appendChild(target);
+
+        let lifeSpan = Math.max(800, 1800 - (hits * 25));
+        setTimeout(() => {
+            if (!isHit && target.parentElement && gameActive) {
+                target.remove();
+                updateMisses();
+            }
+        }, lifeSpan);
+    }
+
+    function createParticles(x, y) {
+        const particleCount = 8; 
+        const colors = ['#ff4757', '#ffa502', '#1e90ff', '#2ed573', '#eccc68', '#ffffff'];
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.width = '10px';
+            particle.style.height = '10px';
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.transition = 'all 0.5s ease-out';
+            
+            gameArea.appendChild(particle);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 60 + 40;
+            const targetX = Math.cos(angle) * velocity;
+            const targetY = Math.sin(angle) * velocity + 30; 
+
+            setTimeout(() => {
+                particle.style.transform = `translate(${targetX}px, ${targetY}px) scale(0)`;
+                particle.style.opacity = '0';
+            }, 10);
+
+            setTimeout(() => {
+                particle.remove();
+            }, 500);
+        }
+    }
+
+    function clickedTarget(target, posX, posY) {
+        playBreakingSound();
+        createParticles(posX, posY); 
+        target.remove();
+        
+        hits++;
+        hitsDisplay.innerText = hits;
+    }
+
+    function missedClick() {
+        if (!gameActive) return;
+        updateMisses();
+    }
+
+    function updateMisses() {
+        playMissSound();
+        misses++;
+        missesDisplay.innerText = misses;
+
+        if (misses >= maxMisses) {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        gameActive = false;
+        clearTimeout(targetInterval); 
+        clearTimeout(bgMusicInterval); // گیم اوور ہونے پر میوزک کو بند کرنے کے لیے
+        gameArea.innerHTML = '';
+        startBtn.disabled = false;
+        nameInput.disabled = false;
+
+        const currentHighScore = parseInt(localStorage.getItem('highScoreValue')) || 0;
+
+        if (hits > currentHighScore) {
+            localStorage.setItem('highScoreValue', hits);
+            localStorage.setItem('highScoreName', currentPlayerName);
+            instruction.innerHTML = `🎉 <strong>New Record!</strong> Game Over! You scored <strong>${hits}</strong>.`;
+        } else {
+            instruction.innerHTML = `Game Over, <strong>${currentPlayerName}</strong>! Your total score was <strong>${hits}</strong>.`;
+        }
+
+        updateLeaderboardDisplay();
+    }
+</script>
