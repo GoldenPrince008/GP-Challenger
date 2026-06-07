@@ -1,201 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GP Challenger</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #1e1e2f, #252542);
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-            user-select: none;
-            overflow: hidden;
+<script>
+    let hits = 0;
+    let misses = 0;
+    let targetInterval;
+    let bgMusicInterval; // بیک گراؤنڈ میوزک کے لوپ کے لیے
+    let gameActive = false;
+    let currentPlayerName = "";
+    let currentSpawnRate = 950; // ابتدائی رفتار
+    const maxMisses = 10;
+    let musicStep = 0; // میوزک کی دھن کا ٹریک رکھنے کے لیے
+
+    const gameArea = document.getElementById('game-area');
+    const hitsDisplay = document.getElementById('hits');
+    const missesDisplay = document.getElementById('misses');
+    const instruction = document.getElementById('instruction');
+    const startBtn = document.getElementById('start-btn');
+    const nameInput = document.getElementById('player-name');
+    
+    const topPlayerDisplay = document.getElementById('top-player');
+    const topScoreDisplay = document.getElementById('top-score');
+
+    updateLeaderboardDisplay();
+
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-
-        /* Leaderboard Styling */
-        #leaderboard {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 18px;
-            font-weight: bold;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
         }
+    }
 
-        .counters {
-            display: flex;
-            gap: 30px;
-            font-size: 22px;
-            font-weight: bold;
-            margin-bottom: 15px;
-        }
-
-        #game-area {
-            width: 90%;
-            max-width: 800px;
-            height: 55vh;
-            background-color: #151522;
-            position: relative;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            border-radius: 12px;
-            overflow: hidden;
-            cursor: crosshair;
-            border: 2px solid #3d3d5c;
-        }
-
-        /* Target Animations and Shapes */
-        .target {
-            width: 70px;
-            height: 70px;
-            position: absolute;
-            cursor: pointer;
-            transition: transform 0.15s ease, opacity 0.15s ease;
-        }
-
-        /* Dynamic Animations for variety */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.15); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes rotateRight {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes rotateLeft {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(-360deg); }
-        }
-
-        .anim-pulse { animation: pulse 1s infinite ease-in-out; }
-        .anim-rotate-right { animation: rotateRight 2s infinite linear; }
-        .anim-rotate-left { animation: rotateLeft 2s infinite linear; }
-
-        .target.broken {
-            transform: scale(1.8) rotate(45deg) !important;
-            opacity: 0;
-        }
-
-        .score-board {
-            margin-top: 15px;
-            font-size: 18px;
-            text-align: center;
-        }
-
-        /* Name input box styling */
-        .input-container {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-
-        input[type="text"] {
-            padding: 10px 15px;
-            font-size: 16px;
-            border: 2px solid #3d3d5c;
-            border-radius: 6px;
-            background-color: #252542;
-            color: white;
-            outline: none;
-            text-align: center;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus {
-            border-color: #00ff88;
-        }
-
-        button {
-            padding: 12px 28px;
-            background: linear-gradient(45deg, #2ed573, #1abc9c);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(46, 213, 115, 0.3);
-            transition: all 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(46, 213, 115, 0.5);
-        }
-
-        button:disabled {
-            background: #7f8c8d;
-            box-shadow: none;
-            cursor: not-allowed;
-            transform: none;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="leaderboard">🏆 Top Scorer: <span id="top-player">None</span> - <span id="top-score">0</span></div>
-
-    <div class="counters">
-        <span style="color: #2ed573;">Hits: <span id="hits">0</span></span>
-        <span style="color: #ff4757;">Misses: <span id="misses">0</span>/10</span>
-    </div>
-
-    <div id="game-area" onclick="missedClick()"></div>
-
-    <div class="score-board">
-        <p id="instruction">Enter your name to start the challenge!</p>
-    </div>
-
-    <div class="input-container">
-        <input type="text" id="player-name" placeholder="Enter your name..." maxlength="15">
-        <button id="start-btn" onclick="startGame()">Start Game</button>
-    </div>
-
-    <script>
-        let hits = 0;
-        let misses = 0;
-        let targetInterval;
-        let gameActive = false;
-        let currentPlayerName = "";
-        const maxMisses = 10;
-
-        const gameArea = document.getElementById('game-area');
-        const hitsDisplay = document.getElementById('hits');
-        const missesDisplay = document.getElementById('misses');
-        const instruction = document.getElementById('instruction');
-        const startBtn = document.getElementById('start-btn');
-        const nameInput = document.getElementById('player-name');
-        
-        const topPlayerDisplay = document.getElementById('top-player');
-        const topScoreDisplay = document.getElementById('top-score');
-
-        // Load leaderboard on load
-        updateLeaderboardDisplay();
-
-        let audioCtx;
-
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
-
-        function playSound(frequency, duration, type, volume) {
-            initAudio();
+    function playSound(frequency, duration, type, volume) {
+        initAudio();
+        try {
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
 
@@ -209,155 +48,232 @@
 
             oscillator.start();
             oscillator.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            console.log("Audio play blocked or unsupported");
+        }
+    }
+
+    // کوڈنگ کے ذریعے ہلکا سا بیک گراؤنڈ میوزک جنریٹ کرنے والا فنکشن
+    function playBackgroundMusic() {
+        if (!gameActive) return;
+
+        // ایک خوبصورت ریٹرو گیم میلڈی (دھن) کے فریکوئنسی نوٹس
+        const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 349.23, 329.63, 293.66];
+        const currentNote = melody[musicStep % melody.length];
+
+        initAudio();
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            // 'sine' ویو سے آواز بہت نرم اور ہلکی (Mellow) آتی ہے جو بیک گراؤنڈ کے لیے پرفیکٹ ہے
+            osc.type = 'sine'; 
+            osc.frequency.value = currentNote;
+            
+            // والیم کو بہت ہلکا (0.04) رکھا ہے تاکہ ہٹ اور مس کی آوازیں صاف سنائی دیں
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        } catch(e) {
+            console.log("Music error");
         }
 
-        function playBreakingSound() {
-            playSound(800, 0.15, 'triangle', 0.4);
+        musicStep++;
+        // ہر 450ms بعد اگلا نوٹ چلے گا (ایک مستقل ردم)
+        bgMusicInterval = setTimeout(playBackgroundMusic, 450); 
+    }
+
+    function playBreakingSound() {
+        playSound(800, 0.15, 'triangle', 0.4);
+    }
+
+    function playMissSound() {
+        playSound(250, 0.3, 'sawtooth', 0.2);
+    }
+
+    function updateLeaderboardDisplay() {
+        const savedName = localStorage.getItem('highScoreName');
+        const savedScore = localStorage.getItem('highScoreValue');
+
+        if (savedName && savedScore) {
+            topPlayerDisplay.innerText = savedName;
+            topScoreDisplay.innerText = savedScore;
+        } else {
+            topPlayerDisplay.innerText = "No one yet";
+            topScoreDisplay.innerText = "0";
+        }
+    }
+
+    function startGame() {
+        const enteredName = nameInput.value.trim();
+        if (!enteredName) {
+            alert("Please enter your name first!");
+            return;
         }
 
-        function playMissSound() {
-            playSound(250, 0.3, 'sawtooth', 0.2);
-        }
+        initAudio(); 
+        currentPlayerName = enteredName;
+        hits = 0;
+        misses = 0;
+        currentSpawnRate = 950; 
+        musicStep = 0;
+        gameActive = true;
+        
+        hitsDisplay.innerText = hits;
+        missesDisplay.innerText = misses;
+        instruction.innerHTML = `Good Luck, <strong>${currentPlayerName}</strong>! Catch the targets!`;
+        
+        startBtn.disabled = true;
+        nameInput.disabled = true;
+        gameArea.innerHTML = '';
+        
+        gameLoop();
+        playBackgroundMusic(); // یہاں سے بیک گراؤنڈ میوزک شروع ہوگا
+    }
 
-        function updateLeaderboardDisplay() {
-            const savedName = localStorage.getItem('highScoreName');
-            const savedScore = localStorage.getItem('highScoreValue');
+    function gameLoop() {
+        if (!gameActive) return;
+        createTarget();
+        
+        let dynamicRate = Math.max(350, currentSpawnRate - (hits * 18)); 
+        targetInterval = setTimeout(gameLoop, dynamicRate);
+    }
 
-            if (savedName && savedScore) {
-                topPlayerDisplay.innerText = savedName;
-                topScoreDisplay.innerText = savedScore;
-            } else {
-                topPlayerDisplay.innerText = "No one yet";
-                topScoreDisplay.innerText = "0";
+    function createTarget() {
+        if (!gameActive) return;
+
+        const areaRect = gameArea.getBoundingClientRect();
+        const targetSize = 70;
+
+        const target = document.createElement('div');
+        target.classList.add('target');
+
+        const cartoonStyles = [
+            { emoji: '👾', anim: 'anim-pulse', bg: 'rgba(255, 71, 87, 0.2)' },          
+            { emoji: '🚀', anim: 'anim-rotate-right', bg: 'rgba(255, 165, 2, 0.2)' },   
+            { emoji: '🛸', anim: 'anim-rotate-left', bg: 'rgba(30, 144, 255, 0.2)' }, 
+            { emoji: '👻', anim: 'anim-pulse', bg: 'rgba(46, 213, 115, 0.2)' }, 
+            { emoji: '🎃', anim: 'anim-rotate-right', bg: 'rgba(236, 204, 104, 0.2)' } 
+        ];
+
+        const randomStyle = cartoonStyles[Math.floor(Math.random() * cartoonStyles.length)];
+        
+        target.innerHTML = `<span style="font-size: 40px; display: block; text-align: center; line-height: 70px;">${randomStyle.emoji}</span>`;
+        target.style.backgroundColor = randomStyle.bg;
+        target.style.borderRadius = '50%';
+        target.style.border = '2px solid rgba(255,255,255,0.4)';
+        target.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+        target.style.cursor = 'pointer';
+        target.classList.add(randomStyle.anim);
+
+        const randomX = Math.random() * (areaRect.width - targetSize);
+        const randomY = Math.random() * (areaRect.height - targetSize);
+
+        target.style.left = randomX + 'px';
+        target.style.top = randomY + 'px';
+
+        let isHit = false;
+
+        target.addEventListener('mousedown', function(event) {
+            event.stopPropagation();
+            if (!isHit && gameActive) {
+                isHit = true;
+                clickedTarget(target, randomX + targetSize/2, randomY + targetSize/2);
             }
-        }
+        });
 
-        function startGame() {
-            const enteredName = nameInput.value.trim();
-            if (!enteredName) {
-                alert("Please enter your name first!");
-                return;
-            }
+        gameArea.appendChild(target);
 
-            initAudio();
-            currentPlayerName = enteredName;
-            hits = 0;
-            misses = 0;
-            gameActive = true;
-            
-            hitsDisplay.innerText = hits;
-            missesDisplay.innerText = misses;
-            instruction.innerHTML = `Good Luck, <strong>${currentPlayerName}</strong>! Catch the targets!`;
-            
-            startBtn.disabled = true;
-            nameInput.disabled = true;
-            gameArea.innerHTML = '';
-            
-            // Adjust appearance speed here if needed
-            targetInterval = setInterval(createTarget, 950);
-        }
-
-        function createTarget() {
-            if (!gameActive) return;
-
-            const areaRect = gameArea.getBoundingClientRect();
-            const targetSize = 70;
-
-            const target = document.createElement('div');
-            target.classList.add('target');
-
-            // Variety of Shapes, Colors, and Animations
-            const styles = [
-                { bg: '#ff4757', radius: '50%', anim: 'anim-pulse' },          // Red Circle Pulsing
-                { bg: '#ffa502', radius: '4px', anim: 'anim-rotate-right' },   // Orange Square Spinning Right
-                { bg: '#1e90ff', radius: '50%', anim: 'anim-rotate-left', border: '3px dashed white' }, // Blue Dashed Circle
-                { bg: '#2ed573', radius: '20px 0px 20px 0px', anim: 'anim-pulse' }, // Green Leaf Shape
-                { bg: '#eccc68', radius: '50%', anim: 'anim-rotate-right', border: '4px double #ff4757' } // Fancy Golden Coin
-            ];
-
-            // Pick a random style variation
-            const randomStyle = styles[Math.floor(Math.random() * styles.length)];
-            target.style.backgroundColor = randomStyle.bg;
-            target.style.borderRadius = randomStyle.radius;
-            target.classList.add(randomStyle.anim);
-            if (randomStyle.border) {
-                target.style.border = randomStyle.border;
-            }
-
-            const randomX = Math.random() * (areaRect.width - targetSize);
-            const randomY = Math.random() * (areaRect.height - targetSize);
-
-            target.style.left = randomX + 'px';
-            target.style.top = randomY + 'px';
-
-            let isHit = false;
-
-            target.addEventListener('mousedown', function(event) {
-                event.stopPropagation();
-                if (!isHit && gameActive) {
-                    isHit = true;
-                    clickedTarget(target);
-                }
-            });
-
-            gameArea.appendChild(target);
-
-            // Targets stay on screen for 1.8 seconds before vanishing
-            setTimeout(() => {
-                if (!isHit && target.parentElement && gameActive) {
-                    target.remove();
-                    updateMisses();
-                }
-            }, 1800);
-        }
-
-        function clickedTarget(target) {
-            playBreakingSound();
-            target.classList.add('broken');
-            hits++;
-            hitsDisplay.innerText = hits;
-            
-            setTimeout(() => {
+        let lifeSpan = Math.max(800, 1800 - (hits * 25));
+        setTimeout(() => {
+            if (!isHit && target.parentElement && gameActive) {
                 target.remove();
-            }, 150);
-        }
-
-        function missedClick() {
-            if (!gameActive) return;
-            updateMisses();
-        }
-
-        function updateMisses() {
-            playMissSound();
-            misses++;
-            missesDisplay.innerText = misses;
-
-            if (misses >= maxMisses) {
-                endGame();
+                updateMisses();
             }
+        }, lifeSpan);
+    }
+
+    function createParticles(x, y) {
+        const particleCount = 8; 
+        const colors = ['#ff4757', '#ffa502', '#1e90ff', '#2ed573', '#eccc68', '#ffffff'];
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'absolute';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.width = '10px';
+            particle.style.height = '10px';
+            particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            particle.style.borderRadius = '50%';
+            particle.style.pointerEvents = 'none';
+            particle.style.transition = 'all 0.5s ease-out';
+            
+            gameArea.appendChild(particle);
+
+            const angle = Math.random() * Math.PI * 2;
+            const velocity = Math.random() * 60 + 40;
+            const targetX = Math.cos(angle) * velocity;
+            const targetY = Math.sin(angle) * velocity + 30; 
+
+            setTimeout(() => {
+                particle.style.transform = `translate(${targetX}px, ${targetY}px) scale(0)`;
+                particle.style.opacity = '0';
+            }, 10);
+
+            setTimeout(() => {
+                particle.remove();
+            }, 500);
+        }
+    }
+
+    function clickedTarget(target, posX, posY) {
+        playBreakingSound();
+        createParticles(posX, posY); 
+        target.remove();
+        
+        hits++;
+        hitsDisplay.innerText = hits;
+    }
+
+    function missedClick() {
+        if (!gameActive) return;
+        updateMisses();
+    }
+
+    function updateMisses() {
+        playMissSound();
+        misses++;
+        missesDisplay.innerText = misses;
+
+        if (misses >= maxMisses) {
+            endGame();
+        }
+    }
+
+    function endGame() {
+        gameActive = false;
+        clearTimeout(targetInterval); 
+        clearTimeout(bgMusicInterval); // گیم اوور ہونے پر میوزک کو بند کرنے کے لیے
+        gameArea.innerHTML = '';
+        startBtn.disabled = false;
+        nameInput.disabled = false;
+
+        const currentHighScore = parseInt(localStorage.getItem('highScoreValue')) || 0;
+
+        if (hits > currentHighScore) {
+            localStorage.setItem('highScoreValue', hits);
+            localStorage.setItem('highScoreName', currentPlayerName);
+            instruction.innerHTML = `🎉 <strong>New Record!</strong> Game Over! You scored <strong>${hits}</strong>.`;
+        } else {
+            instruction.innerHTML = `Game Over, <strong>${currentPlayerName}</strong>! Your total score was <strong>${hits}</strong>.`;
         }
 
-        function endGame() {
-            gameActive = false;
-            clearInterval(targetInterval);
-            gameArea.innerHTML = '';
-            startBtn.disabled = false;
-            nameInput.disabled = false;
-
-            // Check and update high score logic
-            const currentHighScore = parseInt(localStorage.getItem('highScoreValue')) || 0;
-
-            if (hits > currentHighScore) {
-                localStorage.setItem('highScoreValue', hits);
-                localStorage.setItem('highScoreName', currentPlayerName);
-                instruction.innerHTML = `🎉 <strong>New Record!</strong> Game Over! You scored <strong>${hits}</strong>.`;
-            } else {
-                instruction.innerHTML = `Game Over, <strong>${currentPlayerName}</strong>! Your total score was <strong>${hits}</strong>.`;
-            }
-
-            updateLeaderboardDisplay();
-        }
-    </script>
-
-</body>
-</html>
+        updateLeaderboardDisplay();
+    }
+</script>
