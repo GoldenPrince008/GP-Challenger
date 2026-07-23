@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Prince Quiz Show - Ultimate Royal Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle, #09091e 0%, #020205 100%);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glow & Studio Lights */
+        .studio-light {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 70%);
+            top: -200px;
+            left: -200px;
+            animation: pulse 6s infinite alternate;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .studio-light.right {
+            left: auto;
+            right: -200px;
+            background: radial-gradient(circle, rgba(255, 0, 128, 0.15) 0%, transparent 70%);
+            animation-delay: 3s;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.5; }
+            100% { transform: scale(1.2) translate(30px, 30px); opacity: 0.7; }
+        }
+
+        /* Main Game Box */
+        .game-container {
+            width: 94%;
+            max-width: 900px;
+            background: rgba(10, 10, 32, 0.95);
+            border: 3px solid #00f0ff;
+            border-radius: 28px;
+            padding: 40px;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.25), inset 0 0 25px rgba(0, 240, 255, 0.1);
+            backdrop-filter: blur(25px);
+            z-index: 10;
+            text-align: center;
+            position: relative;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+
+        .game-container.warning-border {
+            border-color: #ff0055 !important;
+            box-shadow: 0 0 50px rgba(255, 0, 85, 0.5), inset 0 0 25px rgba(255, 0, 85, 0.15);
+        }
+
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-title {
+            font-size: 3.8rem;
+            background: linear-gradient(45deg, #00f0ff, #ffaa00, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            font-weight: 900;
+            text-shadow: 0 0 40px rgba(0,240,255,0.4);
+        }
+
+        .info-text {
+            font-size: 1.2rem;
+            color: #d1d1e9;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        /* Medals Showcase */
+        .medals-display {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid rgba(255, 170, 0, 0.25);
+        }
+
+        .medal-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0.25;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(0.9);
+        }
+
+        .medal-item.unlocked {
+            opacity: 1;
+            filter: drop-shadow(0 0 12px currentColor);
+            transform: scale(1.15);
+        }
+
+        .medal-icon {
+            font-size: 3rem;
+        }
+
+        .medal-name {
+            font-size: 0.9rem;
+            margin-top: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Live Visual Equalizer */
+        .equalizer-container {
+            display: inline-flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 25px;
+            margin-left: 15px;
+            vertical-align: middle;
+        }
+
+        .eq-bar {
+            width: 4px;
+            height: 5px;
+            background-color: #00f0ff;
+            border-radius: 2px;
+            animation: bounce-eq 0.8s ease infinite alternate;
+            animation-play-state: paused;
+        }
+
+        .eq-bar:nth-child(2) { animation-delay: 0.15s; background-color: #ffaa00; }
+        .eq-bar:nth-child(3) { animation-delay: 0.3s; background-color: #ff00ff; }
+        .eq-bar:nth-child(4) { animation-delay: 0.45s; background-color: #00ffaa; }
+
+        @keyframes bounce-eq {
+            0% { height: 5px; }
+            100% { height: 25px; }
+        }
+
+        .playing .eq-bar {
+            animation-play-state: running;
+        }
+
+        /* Auto Next Countdown Overlay */
+        .auto-next-indicator {
+            font-size: 1.4rem;
+            color: #ffaa00;
+            font-weight: bold;
+            margin-top: 25px;
+            height: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none;
+            text-shadow: 0 0 10px rgba(255,170,0,0.5);
+        }
+
+        .selector-box {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 25px;
+            border-radius: 20px;
+            border: 2px solid rgba(0, 240, 255, 0.2);
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .selector-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .selector-label {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #ffaa00;
+            font-weight: bold;
+        }
+
+        .lang-select {
+            background: #06061c;
+            color: #fff;
+            border: 2px solid #0066ff;
+            padding: 12px 24px;
+            font-size: 1.15rem;
+            border-radius: 14px;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            text-align-last: center;
+            font-weight: bold;
+        }
+
+        .lang-select:hover {
+            border-color: #00f0ff;
+            box-shadow: 0 0 15px rgba(0,240,255,0.5);
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.35rem;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(0, 240, 255, 0.2);
+            padding-bottom: 18px;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .level-badge {
+            background: linear-gradient(45deg, #0066ff, #00f0ff);
+            padding: 8px 22px;
+            border-radius: 30px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+
+        .score-badge {
+            background: linear-gradient(45deg, #ff007f, #ff00ff);
+            padding: 8px 22px;
+            border-radius: 30px;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+        }
+
+        /* Extra Stats Board */
+        .stats-hud {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255,255,255,0.02);
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Target Progress Bar */
+        .xp-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1rem;
+            color: #a0a0c5;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .xp-track {
+            flex-grow: 1;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            margin: 0 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .xp-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffaa00, #ff5500);
+            box-shadow: 0 0 12px #ffaa00;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .header-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .mute-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .mute-btn:hover {
+            background: #00f0ff;
+            color: #0c0c1e;
+            box-shadow: 0 0 20px #00f0ff;
+        }
+
+        .timer-container {
+            width: 100%;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00ffaa, #00f0ff);
+            transition: width 0.1s linear;
+            box-shadow: 0 0 15px #00ffaa;
+        }
+
+        /* Power-ups & Lifelines UI */
+        .lifelines-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .lifeline-btn {
+            background: rgba(255, 170, 0, 0.08);
+            border: 2.5px solid #ffaa00;
+            color: #ffaa00;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 35px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lifeline-btn:hover:not(:disabled) {
+            background: #ffaa00;
+            color: #0c0c1e;
+            box-shadow: 0 0 25px rgba(255, 170, 0, 0.7);
+            transform: translateY(-4px);
+        }
+
+        .lifeline-btn:disabled {
+            border-color: #444;
+            color: #666;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: not-allowed;
+            text-decoration: line-through;
+            transform: none !important;
+        }
+
+        .question-box {
+            font-size: 2.1rem;
+            margin-bottom: 35px;
+            min-height: 110px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+            line-height: 1.6;
+            font-weight: 800;
+        }
+
+        /* Options System */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        @media (max-width: 700px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .option-btn {
+            background: rgba(15, 15, 45, 0.8);
+            border: 3px solid #0066ff;
+            color: #fff;
+            padding: 22px 30px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0,102,255,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .option-btn span.choice-txt {
+            flex-grow: 1;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: linear-gradient(90deg, rgba(0,102,255,0.35), rgba(0,240,255,0.35));
+            border-color: #00f0ff;
+            transform: translateY(-5px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+        }
+
+        .option-badge {
+            background: rgba(255, 255, 255, 0.15);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: #00f0ff;
+            border: 1.5px solid #00f0ff;
+            margin-right: 15px;
+        }
+
+        .poll-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 100%;
+            background: rgba(0, 240, 255, 0.2);
+            width: 0%;
+            transition: width 1s ease-in-out;
+            z-index: 1;
+        }
+
+        .poll-percentage {
+            font-size: 1.1rem;
+            color: #00f0ff;
+            font-weight: 900;
+            z-index: 2;
+        }
+
+        .option-btn.correct {
+            background: linear-gradient(45deg, #0066ff, #00e676) !important;
+            border-color: #00e676 !important;
+            box-shadow: 0 0 35px #00e676;
+            animation: bounceIn 0.5s ease;
+            color: white !important;
+            font-weight: 800;
+        }
+
+        .option-btn.wrong {
+            background: linear-gradient(45deg, #ff1744, #b71c1c) !important;
+            border-color: #ff1744 !important;
+            box-shadow: 0 0 35px #ff1744;
+            color: white !important;
+        }
+
+        .option-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .action-btn {
+            background: linear-gradient(45deg, #ffaa00, #ff5500);
+            border: none;
+            color: white;
+            padding: 18px 55px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(255, 85, 0, 0.5);
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 0 35px rgba(255, 170, 0, 0.8);
+        }
+
+        .secondary-btn {
+            background: linear-gradient(45deg, #0066ff, #00f0ff);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .secondary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px #00f0ff;
+        }
+
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 12;
+        }
+
+        .trophy {
+            font-size: 7.5rem;
+            animation: float 3s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
+            margin-bottom: 30px;
+            display: inline-block;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-25px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 15px #fff, 0 0 30px #ffaa00, 0 0 50px #ffaa00; }
+            to { text-shadow: 0 0 30px #fff, 0 0 55px #ffea00, 0 0 75px #ffea00; }
+        }
+
+        .winner-title {
+            font-size: 3.2rem;
+            background: linear-gradient(45deg, #ffe066, #f5b041, #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
+            font-weight: 900;
+        }
+
+        /* Combo Popup Banner */
+        .combo-popup {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: #ffea00;
+            text-shadow: 0 0 30px #ff00ff, 0 0 10px #00f0ff;
+            pointer-events: none;
+            z-index: 100;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
+            opacity: 0;
+        }
+
+        .combo-popup.show {
+            transform: translate(-50%, -50%) scale(1.3);
+            opacity: 1;
+        }
+
+        /* Modal Popups for Spin & Shop */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            border-radius: 28px;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-content {
+            background: #0d0d2b;
+            border: 3px solid #ffaa00;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
+        }
+
+        #fireworks {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
+        }
+
+        .rtl { direction: rtl; text-align: right; }
+        .ltr { direction: ltr; text-align: left; }
+        .center-text { text-align: center !important; }
+    </style>
+</head>
+<body>
+
+    <div class="studio-light" id="light-left"></div>
+    <div class="studio-light right" id="light-right"></div>
+    
+    <canvas id="fireworks"></canvas>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="combo-popup" id="comboBanner">3x COMBO! 🔥</div>
+
+    <div class="game-container" id="gameBox">
+        
+        <!-- Welcome Screen -->
+        <div id="welcome-state" class="screen active ltr">
+            <h1 class="welcome-title">Golden Prince Quiz</h1>
+            <p class="info-text">
+                Prepare to test your extreme trivia knowledge. You have exactly <strong>1 Minute (60 seconds)</strong> for each question. Answer <strong>20 Questions Correctly in a Row</strong> to claim the Golden Crown.
+            </p>
+
+            <div class="selector-box">
+                <div class="selector-group">
+                    <label class="selector-label" for="langSelect">Language / زبان:</label>
+                    <select id="langSelect" class="lang-select" onchange="updateUITranslations()">
+                        <option value="en" selected>English</option>
+                        <option value="ur">Urdu (اردو)</option>
+                        <option value="ar">Arabic (العربية)</option>
+                        <option value="hi">Hindi (हिंदी)</option>
+                    </select>
+                </div>
+                
+                <div class="selector-group">
+                    <label class="selector-label" id="categoryLabel" for="categorySelect">Category / کیٹیگری:</label>
+                    <select id="categorySelect" class="lang-select"></select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button class="secondary-btn" onclick="openSpinWheel()">🎡 Spin & Win</button>
+                <button class="secondary-btn" onclick="openShop()">🛍️ Shield Shop</button>
+            </div>
+
+            <button class="action-btn" id="startBtn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-state" class="screen ltr">
+            <div class="header-controls">
+                <button id="muteBtn" class="mute-btn" onclick="toggleMute()">
+                    <span>🔊 Sound: ON</span>
+                    <div class="equalizer-container" id="eq-viz">
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                        <div class="eq-bar"></div>
+                    </div>
+                </button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div id="streakDisplay" style="font-weight:900; color:#ffaa00; font-size: 1.25rem;">🔥 STREAK: 0/20</div>
+                </div>
+            </div>
+
+            <div class="medals-display">
+                <div class="medal-item" id="medal-bronze" style="color: #cd7f32;">
+                    <div class="medal-icon">🥉</div>
+                    <div class="medal-name">Scholar</div>
+                </div>
+                <div class="medal-item" id="medal-silver" style="color: #c0c0c0;">
+                    <div class="medal-icon">🥈</div>
+                    <div class="medal-name">Knight</div>
+                </div>
+                <div class="medal-item" id="medal-gold" style="color: #ffd700;">
+                    <div class="medal-icon">👑</div>
+                    <div class="medal-name">Prince</div>
+                </div>
+            </div>
+
+            <div class="stats-hud">
+                <div class="stat-item">💰 Coins: <span id="coinCount" style="color:#ffd700; font-weight:bold;">0</span></div>
+                <div class="stat-item">🛡️ Shield Active: <span id="shieldStatus" style="color:#00ffaa; font-weight:bold;">Inactive</span></div>
+            </div>
+
+            <div class="top-bar">
+                <div class="score-badge" id="score-container">Correct Streak: <span id="correct-count">0</span>/20</div>
+                <div class="level-badge" id="level-display">Level: 1</div>
+            </div>
+
+            <div class="xp-container">
+                <span>Victory Journey</span>
+                <div class="xp-track">
+                    <div id="xpBar" class="xp-bar"></div>
+                </div>
+                <span id="xpText">0 / 20 Correct</span>
+            </div>
+
+            <div class="timer-container">
+                <div id="timerBar" class="timer-bar"></div>
+            </div>
+
+            <div class="lifelines-container">
+                <button id="lifeline-fifty" class="lifeline-btn" onclick="useFiftyFifty()">50-50</button>
+                <button id="lifeline-skip" class="lifeline-btn" onclick="useSkip()">Skip ⏭️</button>
+                <button id="lifeline-double" class="lifeline-btn" onclick="useDoubleChance()">Double Chance 🌟</button>
+                <button id="lifeline-poll" class="lifeline-btn" onclick="useAudiencePoll()">Audience Poll 📊</button>
+            </div>
+            
+            <h1 class="question-box" id="question">Loading Question...</h1>
+            
+            <div class="options-grid" id="options-container"></div>
+
+            <div id="autoNextIndicator" class="auto-next-indicator">Next Question in 3s...</div>
+        </div>
+
+        <!-- Winner Screen -->
+        <div id="winner-state" class="screen ltr">
+            <div class="trophy" aria-hidden="true">🏆</div>
+            <h1 class="winner-title" id="winner-heading">You are a Golden Prince!</h1>
+            <p id="winner-sub" style="font-size: 1.5rem; color: #ffea00; margin-bottom: 30px;">You have conquered all 20 challenges consecutively!</p>
+            <button class="option-btn center-text" style="margin: 0 auto; display: block;" onclick="restartGame()">Play Again</button>
+        </div>
+
+        <!-- Spin Wheel Modal -->
+        <div class="modal-overlay" id="spinModal">
+            <div class="modal-content">
+                <h2 style="color: #ffaa00; margin-bottom: 15px;">🎰 Lucky Spin</h2>
+                <p id="spinResultText" style="margin-bottom: 20px;">Spin the wheel to win bonus Coins or a Shield!</p>
+                <button class="action-btn" id="spinBtn" onclick="doSpin()">SPIN NOW!</button>
+                <button class="secondary-btn" onclick="closeModals()" style="margin-top: 15px;">Close</button>
+            </div>
+        </div>
+
+        <!-- Shop Modal -->
+        <div class="modal-overlay" id="shopModal">
+            <div class="modal-content">
+                <h2 style="color: #00f0ff; margin-bottom: 15px;">🛍️ Item Shop</h2>
+                <p style="margin-bottom: 15px;">Buy a Protection Shield to save your streak from wrong answers!</p>
+                <div style="font-size: 1.2rem; margin-bottom: 20px; color: #ffd700;">Price: 30 Coins 💰</div>
+                <button class="action-btn" onclick="buyShield()">Buy Shield 🛡️</button>
+                <button class="secondary-btn" onclick="closeModals()" style="margin-top: 15px;">Close</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const localizedUI = {
+            en: {
+                start: "Start Game",
+                categoryLabel: "Select Category:",
+                categories: {
+                    islamic: "🕌 Islamic Knowledge",
+                    science: "🔬 Science & Technology",
+                    history: "📜 History",
+                    general_knowledge: "🌍 General Knowledge",
+                    sports: "⚽ Sports"
+                },
+                score: "Correct Streak",
+                level: "Level",
+                qof: "Question",
+                winTitle: "You are a Golden Prince!",
+                winSub: "You have conquered all 20 challenges consecutively!",
+                playAgain: "Play Again"
+            },
+            ur: {
+                start: "کھیل شروع کریں",
+                categoryLabel: "کیٹیگری منتخب کریں:",
+                categories: {
+                    islamic: "🕌 اسلامی معلومات",
+                    science: "🔬 سائنس اور ٹیکنالوجی",
+                    history: "📜 تاریخ",
+                    general_knowledge: "🌍 جنرل نالج",
+                    sports: "⚽ کھیل"
+                },
+                score: "مسلسل درست جوابات",
+                level: "لیول",
+                qof: "سوال",
+                winTitle: "آپ گولڈن پرنس ہیں!",
+                winSub: "آپ نے تمام 20 چیلنجز کامیابی سے مکمل کر لیے ہیں!",
+                playAgain: "دوباره کھیلیں"
+            },
+            ar: {
+                start: "ابدأ اللعبة",
+                categoryLabel: "اختر الفئة:",
+                categories: {
+                    islamic: "🕌 المعرفة الإسلامية",
+                    science: "🔬 العلوم والتكنولوجيا",
+                    history: "📜 التاريخ",
+                    general_knowledge: "🌍 الثقافة العامة",
+                    sports: "⚽ الرياضة"
+                },
+                score: "سلسلة الإجابات الصحيحة",
+                level: "المستوى",
+                qof: "السؤال",
+                winTitle: "أنت الأمير الذهبي!",
+                winSub: "لقد تغلبت على جميع التحديات العشرين بنجاح!",
+                playAgain: "اللعب مجدداً"
+            },
+            hi: {
+                start: "खेल शुरू करें",
+                categoryLabel: "श्रेणी चुनें:",
+                categories: {
+                    islamic: "🕌 इस्लामिक ज्ञान",
+                    science: "🔬 विज्ञान और तकनीक",
+                    history: "इतिहास",
+                    general_knowledge: "🌍 सामान्य ज्ञान",
+                    sports: "⚽ खेल"
+                },
+                score: "लगातार सही जवाब",
+                level: "लेवल",
+                qof: "सवाल",
+                winTitle: "आप गोल्डन प्रिंस हैं!",
+                winSub: "आपने सभी 20 चुनौतियों को सफलतापूर्वक पार कर लिया है!",
+                playAgain: "फिर से खेलें"
+            }
+        };
+
+        const quizData = {
+            islamic: [
+                { q: { ur: "قرآن پاک کی سب سے طویل سورت کون سی ہے؟", en: "Which is the longest Surah in the Holy Quran?", ar: "ما هي أطول سورة في القرآن الكريم؟", hi: "कुरान की सबसे लंबी सूरह कौन सी है?" }, a: { ur: ["سورہ البقرہ", "سورہ آل عمران", "سورہ النساء", "سورہ یٰسین"], en: ["Surah Al-Baqarah", "Surah Ali 'Imran", "Surah An-Nisa", "Surah Yaseen"], ar: ["سورة البقرة", "سورة آل عمران", "سورة النساء", "سورة يس"], hi: ["सूरह अल-बकराह", "सूरह आल इमरान", "सूरह अन-निसा", "सूरह यासीन"] }, c: 0 },
+                { q: { ur: "اسلام کے پہلے موذن کا نام کیا ہے؟", en: "Who was the first Muazzin of Islam?", ar: "من هو أول مؤذن في الإسلام؟", hi: "اسلام کے پہلے muazzin کون تھے؟" }, a: { ur: ["حضرت بلال حبشیؓ", "حضرت سلمان فارسیؓ", "حضرت ابوذر غفاریؓ", "حضرت عمار بن یاسرؓ"], en: ["Hazrat Bilal (RA)", "Hazrat Salman Farsi (RA)", "Hazrat Abu Dhar (RA)", "Hazrat Ammar (RA)"], ar: ["بلال بن رباح", "سلمان الفارسي", "أبو ذر الغفاري", "عمار بن ياسر"], hi: ["हज़रत बिलाल (र.अ.)", "हज़रت सलमान फ़ारसी (र.अ.)", "हज़रत अबू धर (र.अ.)", "हज़रत अम्मार (र.अ.)"] }, c: 0 },
+                { q: { ur: "قرآن مجید کی کس سورت میں بسم اللہ دو بار آئی ہے؟", en: "In which Surah of the Quran does Bismillah occur twice?", ar: "في أي سورة من القرآن وردت البسملة مرتين؟", hi: "कुरान की किस सूरह में बिस्मिल्लाह दो बार आई है?" }, a: { ur: ["سورہ النمل", "سورہ البقرہ", "سورہ التوبہ", "سورہ الرحمٰن"], en: ["Surah Al-Naml", "Surah Al-Baqarah", "Surah At-Tawbah", "Surah Ar-Rahman"], ar: ["سورة النمل", "سورة البقرة", "سورة التوبة", "سورة الرحمن"], hi: ["सूरह अल-नमल", "सूरह अल-बकराह", "सूरह अत-तौबा", "सूरह अर-रहमान"] }, c: 0 },
+                { q: { ur: "غزوہ بدر کس ہجری سال میں لڑی گئی؟", en: "In which Hijri year was the Battle of Badr fought?", ar: "في أي عام هجري وقعت غزوة بدر؟", hi: "बद्र की लड़ाई किस हिजरी वर्ष में लड़ी गई थी?" }, a: { ur: ["2 ہجری", "3 ہجری", "4 ہجری", "1 ہجری"], en: ["2 AH", "3 AH", "4 AH", "1 AH"], ar: ["2 هـ", "3 هـ", "4 هـ", "1 هـ"], hi: ["2 हिजरी", "3 हिजरी", "4 हिजरी", "1 हिजरी"] }, c: 0 }
+            ],
+            science: [
+                { q: { ur: "پانی کا کیمیائی فارمولا کیا ہے؟", en: "What is the chemical formula of water?", ar: "ما هي الصيغة الكيميائية للماء؟", hi: "पानी का रासायनिक सूत्र क्या है?" }, a: { ur: ["H2O", "CO2", "NaCl", "O2"], en: ["H2O", "CO2", "NaCl", "O2"], ar: ["H2O", "CO2", "NaCl", "O2"], hi: ["H2O", "CO2", "NaCl", "O2"] }, c: 0 }
+            ],
+            history: [], general_knowledge: [], sports: []
+        };
+
+        function ensure20Questions() {
+            for (let cat in quizData) {
+                let baseQuestions = quizData[cat];
+                while (baseQuestions.length < 20) {
+                    baseQuestions.push({
+                        q: {
+                            ur: `سوال نمبر ${baseQuestions.length + 1} (${cat} چیلنج)`,
+                            en: `Challenge Question Number ${baseQuestions.length + 1} (${cat})`,
+                            ar: `تحدي السؤال رقم ${baseQuestions.length + 1} (${cat})`,
+                            hi: `चुनौती प्रश्न संख्या ${baseQuestions.length + 1} (${cat})`
+                        },
+                        a: {
+                            ur: ["درست جواب (صحیح منتخب کریں)", "غلط آپشن الف", "غلط آپشن ب", "غلط آپشن ج"],
+                            en: ["Correct Option (Choose Me)", "Wrong Option A", "Wrong Option B", "Wrong Option C"],
+                            ar: ["الخيار الصحيح (اخترني)", "خيار خاطئ أ", "خيار خاطئ ب", "خيار خاطئ ج"],
+                            hi: ["सही विकल्प (मुझे चुनें)", "गलत विकल्प क", "गलत विकल्प ख", "गलत विकल्प ग"]
+                        },
+                        c: 0
+                    });
+                }
+            }
+        }
+        ensure20Questions();
+
+        let currentLang = 'en';
+        let selectedCategory = 'islamic';
+        let currentQuestionIndex = 0;
+        let winStreak = 0; 
+        let coins = 0;
+        let hasShield = false;
+        let isMuted = false;
+        
+        let audioCtx = null;
+        let heartbeatInterval = null;
+        let suspenseHumSource = null;
+
+        let timerInterval = null;
+        const totalTime = 60; 
+        let timeLeft = totalTime;
+        let autoNextTimeout = null;
+
+        let lifelines = { fifty: true, skip: true, double: true, poll: true };
+        let isDoubleChanceActive = false;
+        let doubleChanceUsedOnCurrent = false;
+
+        const pCanvas = document.getElementById("particle-canvas");
+        const pCtx = pCanvas.getContext("2d");
+        let uiParticles = [];
+
+        function resizeParticleCanvas() {
+            pCanvas.width = window.innerWidth;
+            pCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeParticleCanvas);
+        resizeParticleCanvas();
+
+        function initAudio() {
+            if (isMuted) return;
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const muteBtn = document.getElementById("muteBtn");
+            const eq = document.getElementById("eq-viz");
+            if (isMuted) {
+                muteBtn.querySelector('span').innerText = "🔇 Sound: OFF";
+                eq.classList.remove("playing");
+                stopHeartbeatSound();
+                stopSuspenseHum();
+            } else {
+                muteBtn.querySelector('span').innerText = "🔊 Sound: ON";
+                eq.classList.add("playing");
+                if(document.getElementById("quiz-state").classList.contains("active")) {
+                    startHeartbeatSound();
+                    startSuspenseHum();
+                }
+            }
+        }
+
+        function triggerEqualizerPulse() {
+            if (isMuted) return;
+            const eq = document.getElementById("eq-viz");
+            eq.classList.add("playing");
+            setTimeout(() => {
+                if (isMuted) eq.classList.remove("playing");
+            }, 500);
+        }
+
+        function playClickSound() {
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            triggerEqualizerPulse();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.1);
+        }
+
+        /* NEW: 4-5 Seconds Ethereal Suspense Chime Melody for New Question */
+        function playNewQuestionChime() {
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            triggerEqualizerPulse();
+            let now = audioCtx.currentTime;
+            
+            // Suspense Melody Notes (Piano/Synth Style)
+            let notes = [220, 261.63, 329.63, 392, 440, 523.25, 659.25, 523.25, 440, 329.63, 261.63];
+            
+            notes.forEach((freq, index) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                
+                osc.type = (index % 2 === 0) ? 'sine' : 'triangle';
+                osc.frequency.setValueAtTime(freq, now + (index * 0.35));
+                
+                gain.gain.setValueAtTime(0, now + (index * 0.35));
+                gain.gain.linearRampToValueAtTime(0.15, now + (index * 0.35) + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.35) + 0.6);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now + (index * 0.35));
+                osc.stop(now + (index * 0.35) + 0.65);
+            });
+        }
+
+        function playCoinSound() {
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(987.77, now);
+            osc.frequency.setValueAtTime(1318.51, now + 0.08);
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.3);
+        }
+
+        function playTikSound() {
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            triggerEqualizerPulse();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            let stateFreq = (Math.round(timeLeft * 10) % 2 === 0) ? 1400 : 900;
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(stateFreq, now);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.07);
+        }
+
+        function playCorrectSound() {
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            triggerEqualizerPulse();
+            let now = audioCtx.currentTime;
+            let notes = [523.25, 659.25, 783.99, 1046.50]; 
+            notes.forEach((freq, index) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + (index * 0.05));
+                gain.gain.setValueAtTime(0, now + (index * 0.05));
+                gain.gain.linearRampToValueAtTime(0.18, now + (index * 0.05) + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.05) + 0.3);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now + (index * 0.05)); osc.stop(now + (index * 0.05) + 0.45);
+            });
+        }
+
+        function playSadOverSound() {
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            triggerEqualizerPulse();
+            let now = audioCtx.currentTime;
+            let sadMelody = [392.00, 349.23, 311.13, 261.63, 196.00];
+            sadMelody.forEach((freq, index) => {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(freq, now + (index * 0.15));
+                gain.gain.setValueAtTime(0.18, now + (index * 0.15));
+                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.15) + 0.5);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(now + (index * 0.15)); osc.stop(now + (index * 0.15) + 0.6);
+            });
+        }
+
+        function playLifelineUseSound() {
+            if(isMuted) return; initAudio(); if (!audioCtx) return;
+            triggerEqualizerPulse();
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(1500, now + 0.25);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.35);
+        }
+
+        function startSuspenseHum() {
+            stopSuspenseHum();
+            if(isMuted) return; initAudio(); if(!audioCtx) return;
+            let now = audioCtx.currentTime;
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(55, now);
+            
+            let filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(150, now);
+
+            gain.gain.setValueAtTime(0.08, now);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            suspenseHumSource = { osc, gain };
+        }
+
+        function stopSuspenseHum() {
+            if (suspenseHumSource) {
+                try { suspenseHumSource.osc.stop(); } catch(e){}
+                suspenseHumSource = null;
+            }
+        }
+
+        function startHeartbeatSound() {
+            stopHeartbeatSound();
+            if (isMuted) return;
+            initAudio();
+            if(!audioCtx) return;
+            heartbeatInterval = setInterval(() => {
+                let now = audioCtx.currentTime;
+                playBeat(now, 100);
+                playBeat(now + 0.25, 95);
+            }, 1000);
+        }
+
+        function playBeat(time, freq) {
+            let osc = audioCtx.createOscillator();
+            let gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, time);
+            osc.frequency.exponentialRampToValueAtTime(20, time + 0.15);
+            gain.gain.setValueAtTime(0.25, time);
+            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(time); osc.stop(time + 0.2);
+        }
+
+        function stopHeartbeatSound() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
+
+        function updateUITranslations() {
+            currentLang = document.getElementById("langSelect").value;
+            const translation = localizedUI[currentLang];
+
+            document.getElementById("startBtn").innerText = translation.start;
+            document.getElementById("categoryLabel").innerText = translation.categoryLabel;
+
+            const catSelect = document.getElementById("categorySelect");
+            const previousValue = catSelect.value || "islamic";
+            catSelect.innerHTML = "";
+            for (let key in translation.categories) {
+                const opt = document.createElement("option");
+                opt.value = key;
+                opt.innerText = translation.categories[key];
+                if (key === previousValue) opt.selected = true;
+                catSelect.appendChild(opt);
+            }
+            adjustInterfaceDirection();
+        }
+        updateUITranslations();
+
+        function createExplosion(x, y) {
+            const colors = ['#00f0ff', '#ff00ff', '#00ffaa', '#ffaa00', '#ffffff'];
+            for (let i = 0; i < 40; i++) {
+                uiParticles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    size: Math.random() * 5 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1,
+                    decay: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+
+        function animateParticles() {
+            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+            uiParticles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.12;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) {
+                    uiParticles.splice(index, 1);
+                } else {
+                    pCtx.save();
+                    pCtx.globalAlpha = p.alpha;
+                    pCtx.fillStyle = p.color;
+                    pCtx.beginPath();
+                    pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    pCtx.fill();
+                    pCtx.restore();
+                }
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        function adjustInterfaceDirection() {
+            const lang = document.getElementById("langSelect").value;
+            const questionElement = document.getElementById("question");
+            if (lang === 'ur' || lang === 'ar') {
+                questionElement.className = "question-box rtl";
+            } else {
+                questionElement.className = "question-box ltr";
+            }
+        }
+
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function startGame() {
+            playClickSound();
+            currentLang = document.getElementById("langSelect").value;
+            selectedCategory = document.getElementById("categorySelect").value;
+            
+            document.getElementById("welcome-state").classList.remove("active");
+            document.getElementById("quiz-state").classList.add("active");
+            
+            winStreak = 0;
+            currentQuestionIndex = 0;
+            
+            document.getElementById("correct-count").innerText = winStreak;
+            document.getElementById("coinCount").innerText = coins;
+            
+            if (!isMuted) document.getElementById("eq-viz").classList.add("playing");
+            
+            quizData[selectedCategory] = shuffleArray(quizData[selectedCategory]);
+            
+            updateXPBar();
+            updateMedalsUI();
+
+            lifelines = { fifty: true, skip: true, double: true, poll: true };
+            updateLifelinesUI();
+            loadQuestion();
+        }
+
+        function updateMedalsUI() {
+            const bronze = document.getElementById("medal-bronze");
+            const silver = document.getElementById("medal-silver");
+            const gold = document.getElementById("medal-gold");
+
+            bronze.classList.remove("unlocked");
+            silver.classList.remove("unlocked");
+            gold.classList.remove("unlocked");
+
+            if (winStreak >= 5) bronze.classList.add("unlocked");
+            if (winStreak >= 10) silver.classList.add("unlocked");
+            if (winStreak >= 20) gold.classList.add("unlocked");
+        }
+
+        function updateLifelinesUI() {
+            document.getElementById("lifeline-fifty").disabled = !lifelines.fifty;
+            document.getElementById("lifeline-skip").disabled = !lifelines.skip;
+            document.getElementById("lifeline-double").disabled = !lifelines.double;
+            document.getElementById("lifeline-poll").disabled = !lifelines.poll;
+        }
+
+        function updateXPBar() {
+            const xpBar = document.getElementById("xpBar");
+            const xpText = document.getElementById("xpText");
+            
+            const percentage = (winStreak / 20) * 100;
+            xpBar.style.width = percentage + "%";
+            xpText.innerText = `${winStreak} / 20 consecutive wins`;
+            document.getElementById("streakDisplay").innerText = `🔥 STREAK: ${winStreak}/20`;
+        }
+
+        function triggerDamageVisuals() {
+            const gameBox = document.getElementById("gameBox");
+            gameBox.classList.add("shake", "warning-border");
+            setTimeout(() => {
+                gameBox.classList.remove("shake");
+            }, 500);
+        }
+
+        function showComboBanner(streakNum) {
+            const banner = document.getElementById("comboBanner");
+            banner.innerText = `${streakNum}x COMBO! 🔥`;
+            banner.classList.add("show");
+            setTimeout(() => {
+                banner.classList.remove("show");
+            }, 1200);
+        }
+
+        function loadQuestion() {
+            if (autoNextTimeout) clearTimeout(autoNextTimeout);
+            document.getElementById("autoNextIndicator").style.display = "none";
+            document.getElementById("gameBox").classList.remove("warning-border");
+            isDoubleChanceActive = false;
+            doubleChanceUsedOnCurrent = false;
+
+            playNewQuestionChime(); 
+
+            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
+            const trans = localizedUI[currentLang];
+            
+            document.getElementById("score-container").innerHTML = `${trans.score}: <span id="correct-count">${winStreak}</span>/20`;
+            
+            let dynamicLvl = 1;
+            if (winStreak >= 15) dynamicLvl = 4;
+            else if (winStreak >= 10) dynamicLvl = 3;
+            else if (winStreak >= 5) dynamicLvl = 2;
+
+            document.getElementById("level-display").innerText = `${trans.level}: ${dynamicLvl} (${trans.qof} ${winStreak + 1}/20)`;
+            document.getElementById("question").innerText = currentQuestion.q[currentLang];
+            adjustInterfaceDirection();
+            
+            const optionsContainer = document.getElementById("options-container");
+            optionsContainer.innerHTML = "";
+            
+            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
+            const shuffledChoices = shuffleArray(currentQuestion.a[currentLang]);
+            
+            const optionLabels = ["A", "B", "C", "D"];
+            shuffledChoices.forEach((choice, index) => {
+                const button = document.createElement("button");
+                button.className = "option-btn";
+                
+                button.innerHTML = `
+                    <div style="display: flex; align-items: center; width: 85%;">
+                        <div class="option-badge">${optionLabels[index]}</div>
+                        <span class="choice-txt">${choice}</span>
+                    </div>
+                `;
+                
+                button.onclick = (e) => {
+                    checkAnswer(button, choice, correctText, e);
+                };
+                optionsContainer.appendChild(button);
+            });
+
+            resetAndStartTimer();
+            startHeartbeatSound();
+            startSuspenseHum();
+            updateLifelinesUI();
+            updateMedalsUI();
+            updateXPBar();
+        }
+
+        function resetAndStartTimer() {
+            clearInterval(timerInterval);
+            timeLeft = totalTime;
+            const timerBar = document.getElementById("timerBar");
+            const gameBox = document.getElementById("gameBox");
+            timerBar.style.width = "100%";
+            timerBar.style.background = "linear-gradient(90deg, #00ffaa, #00f0ff)";
+            
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                let percentage = (timeLeft / totalTime) * 100;
+                timerBar.style.width = percentage + "%";
+                
+                if (timeLeft <= 10) {
+                    timerBar.style.background = "linear-gradient(90deg, #ff1744, #b71c1c)"; 
+                    gameBox.classList.add("warning-border");
+                    if (Math.abs(timeLeft - Math.round(timeLeft)) < 0.05) {
+                        playTikSound(); 
+                    }
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 100);
+        }
+
+        function handleTimeOut() {
+            stopHeartbeatSound();
+            stopSuspenseHum();
+            
+            if (hasShield) {
+                hasShield = false;
+                document.getElementById("shieldStatus").innerText = "Inactive";
+                document.getElementById("shieldStatus").style.color = "#ff3366";
+                alert("⏰ Time Out! Your Shield saved your streak!");
+            } else {
+                winStreak = 0; 
+            }
+            
+            updateMedalsUI();
+            playSadOverSound(); 
+            triggerDamageVisuals();
+            
+            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
+            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
+            const optionsContainer = document.getElementById("options-container");
+            const buttons = optionsContainer.getElementsByClassName("option-btn");
+
+            for (let btn of buttons) {
+                btn.disabled = true;
+                if (btn.innerText.includes(correctText)) {
+                    btn.classList.add("correct");
+                }
+            }
+            triggerAutoNext();
+        }
+
+        function useFiftyFifty() {
+            if (!lifelines.fifty) return;
+            playLifelineUseSound();
+            lifelines.fifty = false;
+            updateLifelinesUI();
+
+            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
+            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
+            const optionsContainer = document.getElementById("options-container");
+            const buttons = Array.from(optionsContainer.getElementsByClassName("option-btn"));
+
+            let wrongButtons = buttons.filter(btn => !btn.querySelector('.choice-txt').innerText.includes(correctText));
+            
+            wrongButtons = shuffleArray(wrongButtons);
+            wrongButtons.slice(0, 2).forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = "0.15";
+            });
+        }
+
+        function useSkip() {
+            if (!lifelines.skip) return;
+            playLifelineUseSound();
+            lifelines.skip = false;
+            stopHeartbeatSound();
+            stopSuspenseHum();
+            clearInterval(timerInterval);
+            
+            currentQuestionIndex = (currentQuestionIndex + 1) % 20;
+            loadQuestion();
+        }
+
+        function useDoubleChance() {
+            if (!lifelines.double) return;
+            playLifelineUseSound();
+            lifelines.double = false;
+            isDoubleChanceActive = true;
+            updateLifelinesUI();
+        }
+
+        function useAudiencePoll() {
+            if (!lifelines.poll) return;
+            playLifelineUseSound();
+            lifelines.poll = false;
+            updateLifelinesUI();
+
+            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
+            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
+            const optionsContainer = document.getElementById("options-container");
+            const buttons = Array.from(optionsContainer.getElementsByClassName("option-btn"));
+
+            let correctPct = Math.floor(Math.random() * 20) + 55;
+            let remaining = 100 - correctPct;
+
+            let distribution = [];
+            for (let i = 0; i < 3; i++) {
+                let share = Math.floor(Math.random() * (remaining - (3 - i - 1)));
+                distribution.push(share);
+                remaining -= share;
+            }
+            distribution.push(remaining);
+            distribution = shuffleArray(distribution);
+
+            let distIndex = 0;
+            buttons.forEach(btn => {
+                const textSpan = btn.querySelector('.choice-txt');
+                let isCorrect = textSpan.innerText === correctText;
+                let pct = isCorrect ? correctPct : distribution[distIndex++];
+                
+                const pollBar = document.createElement('div');
+                pollBar.className = 'poll-bar';
+                btn.appendChild(pollBar);
+                
+                const pctSpan = document.createElement('span');
+                pctSpan.className = 'poll-percentage';
+                pctSpan.innerText = `📊 ${pct}%`;
+                btn.appendChild(pctSpan);
+
+                setTimeout(() => {
+                    pollBar.style.width = `${pct}%`;
+                }, 100);
+            });
+        }
+
+        function checkAnswer(selectedBtn, selectedText, correctText, event) {
+            clearInterval(timerInterval);
+            const optionsContainer = document.getElementById("options-container");
+            const buttons = optionsContainer.getElementsByClassName("option-btn");
+
+            if (event) {
+                createExplosion(event.clientX, event.clientY);
+            }
+
+            if (selectedText === correctText) {
+                stopHeartbeatSound();
+                stopSuspenseHum();
+                winStreak++;
+                
+                // Add Coins on Correct Answer!
+                coins += 10;
+                document.getElementById("coinCount").innerText = coins;
+                playCoinSound();
+
+                // Trigger Combo Visuals
+                if (winStreak === 3 || winStreak === 5 || winStreak === 8 || winStreak === 12 || winStreak === 15) {
+                    showComboBanner(winStreak);
+                }
+
+                // Award Shield automatically every 5 streaks
+                if (winStreak % 5 === 0) {
+                    hasShield = true;
+                    document.getElementById("shieldStatus").innerText = "Active 🛡️";
+                    document.getElementById("shieldStatus").style.color = "#00ffaa";
+                }
+                
+                document.getElementById("correct-count").innerText = winStreak;
+                updateXPBar();
+                
+                selectedBtn.classList.add("correct");
+                playCorrectSound();
+
+                for (let btn of buttons) {
+                    btn.disabled = true;
+                }
+                updateMedalsUI();
+
+                if (winStreak >= 20) {
+                    showGrandFinale();
+                } else {
+                    triggerAutoNext();
+                }
+            } else {
+                if (isDoubleChanceActive && !doubleChanceUsedOnCurrent) {
+                    doubleChanceUsedOnCurrent = true;
+                    selectedBtn.classList.add("wrong");
+                    selectedBtn.disabled = true;
+                    playSadOverSound(); 
+                    triggerDamageVisuals();
+                    resetAndStartTimer(); 
+                    return; 
+                }
+
+                stopHeartbeatSound();
+                stopSuspenseHum();
+                
+                if (hasShield) {
+                    hasShield = false;
+                    document.getElementById("shieldStatus").innerText = "Inactive";
+                    document.getElementById("shieldStatus").style.color = "#ff3366";
+                    alert("🛡️ Shield used! Your streak was saved!");
+                } else {
+                    winStreak = 0; 
+                }
+                
+                updateMedalsUI();
+                triggerDamageVisuals();
+                
+                selectedBtn.classList.add("wrong");
+                playSadOverSound(); 
+
+                for (let btn of buttons) {
+                    btn.disabled = true;
+                    if (btn.querySelector('.choice-txt').innerText === correctText) {
+                        btn.classList.add("correct");
+                    }
+                }
+                triggerAutoNext();
+            }
+        }
+
+        function triggerAutoNext() {
+            const indicator = document.getElementById("autoNextIndicator");
+            indicator.style.display = "block";
+            let secLeft = 3;
+            indicator.innerText = `Next Question in ${secLeft}s...`;
+
+            let autoCountdown = setInterval(() => {
+                secLeft--;
+                if (secLeft > 0) {
+                    indicator.innerText = `Next Question in ${secLeft}s...`;
+                } else {
+                    clearInterval(autoCountdown);
+                }
+            }, 1000);
+
+            autoNextTimeout = setTimeout(() => {
+                currentQuestionIndex = (currentQuestionIndex + 1) % 20; 
+                loadQuestion();
+            }, 3000);
+        }
+
+        function showGrandFinale() {
+            document.getElementById("quiz-state").classList.remove("active");
+            document.getElementById("winner-state").classList.add("active");
+            
+            const trans = localizedUI[currentLang];
+            document.getElementById("winner-heading").innerText = trans.winTitle;
+            document.getElementById("winner-sub").innerText = trans.winSub;
+            
+            const canvas = document.getElementById("fireworks");
+            canvas.style.display = "block";
+            runFireworksEngine();
+        }
+
+        function restartGame() {
+            playClickSound();
+            stopHeartbeatSound();
+            stopSuspenseHum();
+            clearInterval(timerInterval);
+            if(autoNextTimeout) clearTimeout(autoNextTimeout);
+            document.getElementById("winner-state").classList.remove("active");
+            document.getElementById("fireworks").style.display = "none";
+            document.getElementById("welcome-state").classList.add("active");
+            updateUITranslations();
+        }
+
+        /* Lucky Spin Wheel Functions */
+        function openSpinWheel() {
+            playClickSound();
+            document.getElementById("spinModal").style.display = "flex";
+        }
+
+        function doSpin() {
+            playClickSound();
+            let btn = document.getElementById("spinBtn");
+            btn.disabled = true;
+            document.getElementById("spinResultText").innerText = "Spinning...";
+            
+            setTimeout(() => {
+                let prizes = ["50 Coins 💰", "Protection Shield 🛡️", "20 Coins 💰", "100 Coins 💰"];
+                let won = prizes[Math.floor(Math.random() * prizes.length)];
+                
+                document.getElementById("spinResultText").innerText = `🎉 Congratulations! You won: ${won}`;
+                if (won.includes("Coins")) {
+                    let amount = parseInt(won);
+                    coins += amount;
+                    document.getElementById("coinCount").innerText = coins;
+                    playCoinSound();
+                } else if (won.includes("Shield")) {
+                    hasShield = true;
+                    document.getElementById("shieldStatus").innerText = "Active 🛡️";
+                    document.getElementById("shieldStatus").style.color = "#00ffaa";
+                }
+                btn.disabled = false;
+            }, 1500);
+        }
+
+        /* Item Shop Functions */
+        function openShop() {
+            playClickSound();
+            document.getElementById("shopModal").style.display = "flex";
+        }
+
+        function buyShield() {
+            if (hasShield) {
+                alert("You already have an active Shield!");
+                return;
+            }
+            if (coins >= 30) {
+                coins -= 30;
+                hasShield = true;
+                document.getElementById("coinCount").innerText = coins;
+                document.getElementById("shieldStatus").innerText = "Active 🛡️";
+                document.getElementById("shieldStatus").style.color = "#00ffaa";
+                playCoinSound();
+                alert("🛡️ Protection Shield purchased successfully!");
+                closeModals();
+            } else {
+                alert("Not enough coins! Answer questions to earn coins.");
+            }
+        }
+
+        function closeModals() {
+            playClickSound();
+            document.getElementById("spinModal").style.display = "none";
+            document.getElementById("shopModal").style.display = "none";
+        }
+
+        function runFireworksEngine() {
+            const canvas = document.getElementById("fireworks");
+            const ctx = canvas.getContext("2d");
+            
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            let particles = [];
+            
+            function createFirework(x, y) {
+                const count = 45;
+                const colors = ['#ff0055', '#00ffcc', '#ffcc00', '#ff00ff', '#00ff00', '#00f0ff'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                for (let i = 0; i < count; i++) {
+                    const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
+                    const speed = Math.random() * 6 + 2;
+                    particles.push({
+                        x: x, y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        alpha: 1,
+                        color: color
+                    });
+                }
+            }
+
+            function animate() {
+                if (canvas.style.display === "none") return;
+                ctx.fillStyle = 'rgba(7, 7, 25, 0.2)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach((p, index) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.05;
+                    p.alpha -= 0.012;
+                    
+                    if (p.alpha <= 0) {
+                        particles.splice(index, 1);
+                    } else {
+                        ctx.save();
+                        ctx.globalAlpha = p.alpha;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.restore();
+                    }
+                });
+
+                if (Math.random() < 0.06) {
+                    createFirework(Math.random() * canvas.width, Math.random() * canvas.height * 0.6);
+                }
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
