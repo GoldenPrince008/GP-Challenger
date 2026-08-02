@@ -1,1763 +1,1301 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ur">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golden Prince Quiz Show - Ultimate Royal Edition</title>
+    <title>Golden Prince Quiz</title>
     <style>
+        :root {
+            --bg-color: #07070a;
+            --card-bg: rgba(18, 14, 26, 0.94);
+            --accent-gold: #ffd700;
+            --accent-gold-glow: #ffaa00;
+            --accent-crimson: #e62143;
+            --accent-cyan: #00f2fe;
+            --text-color: #ffffff;
+            --success-green: #2ecc71;
+            --danger-red: #e74c3c;
+            --glass-border: rgba(255, 215, 0, 0.35);
+        }
+
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         body {
-            background: radial-gradient(circle, #09091e 0%, #020205 100%);
-            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            user-select: none;
+        }
+
+        /* Canvas Elements */
+        #bg-canvas, #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+
+        #bg-canvas { z-index: 0; }
+        #confetti-canvas { z-index: 20; }
+
+        /* Game Header Bar */
+        #top-bar {
+            position: relative;
+            z-index: 2;
+            width: 92%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 11, 22, 0.88);
+            padding: 12px 20px;
+            margin-top: 15px;
+            border-radius: 18px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.15);
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            gap: 10px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats-item { font-weight: bold; color: var(--accent-gold); font-size: 1em; }
+        
+        .badge-box {
+            background: rgba(255, 215, 0, 0.12);
+            border: 1px solid var(--accent-gold);
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+
+        .high-score-badge {
+            background: rgba(0, 242, 254, 0.12);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.95em;
+            font-weight: bold;
+        }
+
+        .streak-badge {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            display: none;
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 5px #ff416c; }
+            100% { transform: scale(1.08); box-shadow: 0 0 18px #ff4b2b; }
+        }
+
+        /* Title Logo */
+        .game-title {
+            color: var(--accent-gold);
+            font-size: 2.2em;
+            margin: 10px 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.5), 0 0 30px rgba(230, 33, 67, 0.4);
+            font-weight: 800;
+        }
+
+        /* Main Game Box */
+        #game-container {
+            position: relative;
+            z-index: 1;
+            width: 92%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px;
+            margin: 15px 0 30px 0;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8), 0 0 25px rgba(255, 215, 0, 0.1);
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            animation: zoomIn 0.5s ease;
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #ffd700, #d4af37);
+            color: #0d0a14;
+            border: none;
+            padding: 12px 24px;
+            margin: 6px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn:hover { 
+            transform: translateY(-3px) scale(1.02); 
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5); 
+            background: linear-gradient(135deg, #ffe033, #f1c40f);
+        }
+        .btn:disabled { background: #333; color: #777; cursor: not-allowed; opacity: 0.5; transform: none; box-shadow: none; }
+
+        .cat-btn {
+            width: 100%;
+            max-width: 420px;
+            padding: 16px;
+            margin: 12px auto;
+            display: block;
+            font-size: 1.1em;
+            text-align: left;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.03);
+            color: #fff;
+            border: 1px solid rgba(255,215,0,0.2);
+        }
+        .cat-btn:hover {
+            background: rgba(255, 215, 0, 0.15);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* Timer System */
+        #timer-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            height: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
             overflow: hidden;
             position: relative;
         }
 
-        /* Ambient Glow & Studio Lights */
-        .studio-light {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(0, 240, 255, 0.15) 0%, transparent 70%);
-            top: -200px;
-            left: -200px;
-            animation: pulse 6s infinite alternate;
-            z-index: 1;
-            pointer-events: none;
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-gold-glow));
+            transition: width 1s linear, background 0.3s ease;
         }
 
-        .studio-light.right {
-            left: auto;
-            right: -200px;
-            background: radial-gradient(circle, rgba(255, 0, 128, 0.15) 0%, transparent 70%);
-            animation-delay: 3s;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1) translate(0, 0); opacity: 0.5; }
-            100% { transform: scale(1.2) translate(30px, 30px); opacity: 0.7; }
-        }
-
-        /* Main Game Box */
-        .game-container {
-            width: 94%;
-            max-width: 900px;
-            background: rgba(10, 10, 32, 0.95);
-            border: 3px solid #00f0ff;
-            border-radius: 28px;
-            padding: 40px;
-            box-shadow: 0 0 50px rgba(0, 240, 255, 0.25), inset 0 0 25px rgba(0, 240, 255, 0.1);
-            backdrop-filter: blur(25px);
-            z-index: 10;
-            text-align: center;
+        .option-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: rgba(255,255,255,0.04);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 16px 20px;
+            margin: 12px 0;
+            border-radius: 14px;
+            font-size: 1.05em;
+            cursor: pointer;
+            transition: all 0.25s ease;
             position: relative;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
         }
 
-        .shake {
-            animation: shake 0.5s ease-in-out;
+        .option-btn:hover:not(:disabled) { 
+            background: rgba(255, 215, 0, 0.15); 
+            border-color: var(--accent-gold); 
+            transform: translateX(6px);
+        }
+
+        .option-btn.correct { 
+            background: linear-gradient(135deg, #27ae60, #2ecc71) !important; 
+            border-color: #2ecc71 !important; 
+            color: #fff;
+            animation: bounce 0.5s ease;
+        }
+
+        .option-btn.wrong { 
+            background: linear-gradient(135deg, #c0392b, #e74c3c) !important; 
+            border-color: #e74c3c !important; 
+            color: #fff;
+            animation: shake 0.4s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
 
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-            20%, 40%, 60%, 80% { transform: translateX(10px); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
         }
 
-        .game-container.warning-border {
-            border-color: #ff0055 !important;
-            box-shadow: 0 0 50px rgba(255, 0, 85, 0.5), inset 0 0 25px rgba(255, 0, 85, 0.15);
-        }
-
-        .screen {
-            display: none;
-        }
-        .screen.active {
-            display: block;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .welcome-title {
-            font-size: 3.8rem;
-            background: linear-gradient(45deg, #00f0ff, #ffaa00, #ff00ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-            font-weight: 900;
-            text-shadow: 0 0 40px rgba(0,240,255,0.4);
-        }
-
-        .info-text {
-            font-size: 1.2rem;
-            color: #d1d1e9;
-            margin-bottom: 30px;
-            line-height: 1.8;
-        }
-
-        /* Medals Showcase */
-        .medals-display {
+        /* Lifelines */
+        #lifelines-container {
             display: flex;
             justify-content: center;
-            gap: 25px;
-            margin: 20px 0;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 20px;
-            border-radius: 20px;
-            border: 2px solid rgba(255, 170, 0, 0.25);
-        }
-
-        .medal-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0.25;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: scale(0.9);
-        }
-
-        .medal-item.unlocked {
-            opacity: 1;
-            filter: drop-shadow(0 0 12px currentColor);
-            transform: scale(1.15);
-        }
-
-        .medal-icon {
-            font-size: 3rem;
-        }
-
-        .medal-name {
-            font-size: 0.9rem;
-            margin-top: 8px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Live Visual Equalizer */
-        .equalizer-container {
-            display: inline-flex;
-            align-items: flex-end;
-            gap: 3px;
-            height: 25px;
-            margin-left: 15px;
-            vertical-align: middle;
-        }
-
-        .eq-bar {
-            width: 4px;
-            height: 5px;
-            background-color: #00f0ff;
-            border-radius: 2px;
-            animation: bounce-eq 0.8s ease infinite alternate;
-            animation-play-state: paused;
-        }
-
-        .eq-bar:nth-child(2) { animation-delay: 0.15s; background-color: #ffaa00; }
-        .eq-bar:nth-child(3) { animation-delay: 0.3s; background-color: #ff00ff; }
-        .eq-bar:nth-child(4) { animation-delay: 0.45s; background-color: #00ffaa; }
-
-        @keyframes bounce-eq {
-            0% { height: 5px; }
-            100% { height: 25px; }
-        }
-
-        .playing .eq-bar {
-            animation-play-state: running;
-        }
-
-        /* Auto Next Countdown Overlay */
-        .auto-next-indicator {
-            font-size: 1.4rem;
-            color: #ffaa00;
-            font-weight: bold;
-            margin-top: 25px;
-            height: 30px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            display: none;
-            text-shadow: 0 0 10px rgba(255,170,0,0.5);
-        }
-
-        .selector-box {
-            background: rgba(255, 255, 255, 0.04);
-            padding: 25px;
-            border-radius: 20px;
-            border: 2px solid rgba(0, 240, 255, 0.2);
-            margin-bottom: 30px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .selector-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 350px;
-        }
-
-        .selector-label {
-            display: block;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            color: #ffaa00;
-            font-weight: bold;
-        }
-
-        .lang-select {
-            background: #06061c;
-            color: #fff;
-            border: 2px solid #0066ff;
-            padding: 12px 24px;
-            font-size: 1.15rem;
-            border-radius: 14px;
-            outline: none;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s;
-            text-align-last: center;
-            font-weight: bold;
-        }
-
-        .lang-select:hover {
-            border-color: #00f0ff;
-            box-shadow: 0 0 15px rgba(0,240,255,0.5);
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 10px;
             margin-bottom: 20px;
-            font-size: 1.35rem;
-            font-weight: bold;
-            border-bottom: 2px solid rgba(0, 240, 255, 0.2);
-            padding-bottom: 18px;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .level-badge {
-            background: linear-gradient(45deg, #0066ff, #00f0ff);
-            padding: 8px 22px;
-            border-radius: 30px;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-        }
-
-        .score-badge {
-            background: linear-gradient(45deg, #ff007f, #ff00ff);
-            padding: 8px 22px;
-            border-radius: 30px;
-            box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
-        }
-
-        /* Extra Stats Board */
-        .stats-hud {
-            display: flex;
-            justify-content: space-around;
-            background: rgba(255,255,255,0.02);
-            padding: 10px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            font-size: 1rem;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        /* Target Progress Bar */
-        .xp-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 1rem;
-            color: #a0a0c5;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-
-        .xp-track {
-            flex-grow: 1;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            margin: 0 15px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .xp-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #ffaa00, #ff5500);
-            box-shadow: 0 0 12px #ffaa00;
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .header-controls {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .mute-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(0, 240, 255, 0.4);
-            color: #fff;
-            padding: 8px 18px;
-            border-radius: 14px;
-            cursor: pointer;
-            font-size: 1.05rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            transition: all 0.3s;
-        }
-
-        .mute-btn:hover {
-            background: #00f0ff;
-            color: #0c0c1e;
-            box-shadow: 0 0 20px #00f0ff;
-        }
-
-        .timer-container {
-            width: 100%;
-            height: 15px;
-            background: rgba(255, 255, 255, 0.07);
-            border-radius: 10px;
-            margin-bottom: 30px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .timer-bar {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #00ffaa, #00f0ff);
-            transition: width 0.1s linear;
-            box-shadow: 0 0 15px #00ffaa;
-        }
-
-        /* Power-ups & Lifelines UI */
-        .lifelines-container {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
             flex-wrap: wrap;
         }
 
         .lifeline-btn {
-            background: rgba(255, 170, 0, 0.08);
-            border: 2.5px solid #ffaa00;
-            color: #ffaa00;
-            padding: 12px 24px;
-            font-size: 1.1rem;
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+            padding: 10px 16px;
+            border-radius: 12px;
+            cursor: pointer;
             font-weight: bold;
-            border-radius: 35px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .lifeline-btn:hover:not(:disabled) {
-            background: #ffaa00;
-            color: #0c0c1e;
-            box-shadow: 0 0 25px rgba(255, 170, 0, 0.7);
-            transform: translateY(-4px);
-        }
-
-        .lifeline-btn:disabled {
-            border-color: #444;
-            color: #666;
-            background: rgba(255, 255, 255, 0.02);
-            cursor: not-allowed;
-            text-decoration: line-through;
-            transform: none !important;
-        }
-
-        .question-box {
-            font-size: 2.1rem;
-            margin-bottom: 35px;
-            min-height: 110px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-            line-height: 1.6;
-            font-weight: 800;
-        }
-
-        /* Options System */
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-        }
-
-        @media (max-width: 700px) {
-            .options-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .option-btn {
-            background: rgba(15, 15, 45, 0.8);
-            border: 3px solid #0066ff;
-            color: #fff;
-            padding: 22px 30px;
-            font-size: 1.4rem;
-            font-weight: 700;
-            border-radius: 18px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(0,102,255,0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            text-align: left;
-        }
-
-        .option-btn span.choice-txt {
-            flex-grow: 1;
-        }
-
-        .option-btn:hover:not(:disabled) {
-            background: linear-gradient(90deg, rgba(0,102,255,0.35), rgba(0,240,255,0.35));
-            border-color: #00f0ff;
-            transform: translateY(-5px);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
-        }
-
-        .option-badge {
-            background: rgba(255, 255, 255, 0.15);
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 900;
-            font-size: 1.1rem;
-            color: #00f0ff;
-            border: 1.5px solid #00f0ff;
-            margin-right: 15px;
-        }
-
-        .poll-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 100%;
-            background: rgba(0, 240, 255, 0.2);
-            width: 0%;
-            transition: width 1s ease-in-out;
-            z-index: 1;
-        }
-
-        .poll-percentage {
-            font-size: 1.1rem;
-            color: #00f0ff;
-            font-weight: 900;
-            z-index: 2;
-        }
-
-        .option-btn.correct {
-            background: linear-gradient(45deg, #0066ff, #00e676) !important;
-            border-color: #00e676 !important;
-            box-shadow: 0 0 35px #00e676;
-            animation: bounceIn 0.5s ease;
-            color: white !important;
-            font-weight: 800;
-        }
-
-        .option-btn.wrong {
-            background: linear-gradient(45deg, #ff1744, #b71c1c) !important;
-            border-color: #ff1744 !important;
-            box-shadow: 0 0 35px #ff1744;
-            color: white !important;
-        }
-
-        .option-btn:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-
-        .action-btn {
-            background: linear-gradient(45deg, #ffaa00, #ff5500);
-            border: none;
-            color: white;
-            padding: 18px 55px;
-            font-size: 1.5rem;
-            font-weight: 900;
-            border-radius: 35px;
-            cursor: pointer;
-            box-shadow: 0 8px 25px rgba(255, 85, 0, 0.5);
             transition: all 0.3s;
-            margin: 5px;
+            backdrop-filter: blur(5px);
+            font-size: 0.9em;
         }
 
-        .action-btn:hover {
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 0 35px rgba(255, 170, 0, 0.8);
-        }
-
-        .secondary-btn {
-            background: linear-gradient(45deg, #0066ff, #00f0ff);
-            border: none;
-            color: white;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            font-weight: 800;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin: 5px;
-        }
-
-        .secondary-btn:hover {
+        .lifeline-btn:hover:not(:disabled) { 
+            background: var(--accent-gold); 
+            color: #000;
             transform: translateY(-2px);
-            box-shadow: 0 0 20px #00f0ff;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
         }
 
-        #particle-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 12;
+        .lifeline-btn:disabled { 
+            background: rgba(255,255,255,0.03); 
+            border-color: rgba(255,255,255,0.1); 
+            color: #555;
+            cursor: not-allowed; 
+            opacity: 0.4; 
+            transform: none; 
         }
 
-        .trophy {
-            font-size: 7.5rem;
-            animation: float 3s ease-in-out infinite, glow 1.5s ease-in-out infinite alternate;
-            margin-bottom: 30px;
-            display: inline-block;
+        #timer-box { font-size: 1.2em; font-weight: bold; color: var(--accent-gold); margin-bottom: 10px; }
+        .hidden { display: none !important; }
+
+        .game-over-box {
+            padding: 25px;
+            border-radius: 16px;
+            background: rgba(0,0,0,0.3);
+            margin-top: 15px;
         }
 
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-25px); }
-            100% { transform: translateY(0px); }
-        }
-
-        @keyframes glow {
-            from { text-shadow: 0 0 15px #fff, 0 0 30px #ffaa00, 0 0 50px #ffaa00; }
-            to { text-shadow: 0 0 30px #fff, 0 0 55px #ffea00, 0 0 75px #ffea00; }
-        }
-
-        .winner-title {
-            font-size: 3.2rem;
-            background: linear-gradient(45deg, #ffe066, #f5b041, #fff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 25px;
-            font-weight: 900;
-        }
-
-        /* Combo Popup Banner */
-        .combo-popup {
-            position: absolute;
-            top: 35%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0);
-            font-size: 3.5rem;
-            font-weight: 900;
-            color: #ffea00;
-            text-shadow: 0 0 30px #ff00ff, 0 0 10px #00f0ff;
-            pointer-events: none;
+        /* Modal Screens */
+        .modal {
+            position: fixed;
             z-index: 100;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
-            opacity: 0;
-        }
-
-        .combo-popup.show {
-            transform: translate(-50%, -50%) scale(1.3);
-            opacity: 1;
-        }
-
-        /* Modal Popups for Spin & Shop */
-        .modal-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: none;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.88);
+            display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 50;
-            border-radius: 28px;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(6px);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .modal-content {
-            background: #0d0d2b;
-            border: 3px solid #ffaa00;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-gold);
             padding: 30px;
             border-radius: 20px;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
+            width: 88%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 0 35px rgba(255, 215, 0, 0.3);
         }
 
-        #fireworks {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-            display: none;
+        .poll-bar-container { margin: 14px 0; text-align: left; }
+        .poll-bar-label { font-size: 0.95em; margin-bottom: 6px; }
+        .poll-bar-bg { background: rgba(255,255,255,0.1); height: 20px; border-radius: 10px; overflow: hidden; }
+        .poll-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent-gold), #f1c40f); width: 0%; transition: width 1s ease-out; }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+            text-align: left;
+            background: rgba(255,255,255,0.03);
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
         }
 
-        .rtl { direction: rtl; text-align: right; }
-        .ltr { direction: ltr; text-align: left; }
-        .center-text { text-align: center !important; }
+        #explanation-box {
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid var(--accent-gold);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 18px;
+            font-size: 0.98em;
+            color: #fff8dc;
+            line-height: 1.5;
+            animation: fadeIn 0.4s ease;
+        }
+
+        select.btn {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 30px;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230d0a14'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 20px;
+        }
+
+        .royale-stage-banner {
+            background: linear-gradient(90deg, var(--accent-gold), var(--accent-crimson), var(--accent-gold));
+            background-size: 200% auto;
+            color: #000;
+            font-weight: 900;
+            padding: 6px 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: shine 2s linear infinite;
+        }
+
+        @keyframes shine {
+            to { background-position: 200% center; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="studio-light" id="light-left"></div>
-    <div class="studio-light right" id="light-right"></div>
-    
-    <canvas id="fireworks"></canvas>
-    <canvas id="particle-canvas"></canvas>
+    <canvas id="bg-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
 
-    <div class="combo-popup" id="comboBanner">3x COMBO! 🔥</div>
+    <div id="top-bar">
+        <div class="stats-item badge-box">
+            👑 <span id="txt-bag">Golden Crowns</span>: <span id="crown-count">0</span>
+        </div>
+        <div class="high-score-badge">🏆 Best: <span id="high-score">0</span></div>
+        <div id="streak-badge" class="streak-badge">🔥 <span id="streak-count">0</span>x Streak</div>
+        <div class="stats-item"><span id="txt-stage">اسٹیج</span>: <span id="current-stage">1</span>/<span id="total-stages-count">15</span></div>
+        <div>
+            <select id="lang-select" class="btn" onchange="changeLanguage()">
+                <option value="ur">اردو (Urdu)</option>
+                <option value="en">English</option>
+                <option value="hi">हिंदी (Hindi)</option>
+                <option value="ar">العربية (Arabic)</option>
+            </select>
+            <button class="btn" onclick="toggleSound()">🔊 <span id="sound-status">ON</span></button>
+        </div>
+    </div>
 
-    <div class="game-container" id="gameBox">
+    <h1 class="game-title">👑 Golden Prince Quiz</h1>
+
+    <div id="game-container">
         
-        <!-- Welcome Screen -->
-        <div id="welcome-state" class="screen active ltr">
-            <h1 class="welcome-title">Golden Prince Quiz</h1>
-            <p class="info-text">
-                Prepare to test your extreme trivia knowledge. You have exactly <strong>1 Minute (60 seconds)</strong> for each question. Answer <strong>20 Questions Correctly in a Row</strong> to claim the Golden Crown.
-            </p>
-
-            <div class="selector-box">
-                <div class="selector-group">
-                    <label class="selector-label" for="langSelect">Language / زبان:</label>
-                    <select id="langSelect" class="lang-select" onchange="updateUITranslations()">
-                        <option value="en" selected>English</option>
-                        <option value="ur">Urdu (اردو)</option>
-                        <option value="ar">Arabic (العربية)</option>
-                        <option value="hi">Hindi (हिंदी)</option>
-                    </select>
-                </div>
-                
-                <div class="selector-group">
-                    <label class="selector-label" id="categoryLabel" for="categorySelect">Category / کیٹیگری:</label>
-                    <select id="categorySelect" class="lang-select"></select>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <button class="secondary-btn" onclick="openSpinWheel()">🎡 Spin & Win</button>
-                <button class="secondary-btn" onclick="openShop()">🛍️ Shield Shop</button>
-            </div>
-
-            <button class="action-btn" id="startBtn" onclick="startGame()">Start Game</button>
+        <div id="category-screen">
+            <h2 id="cat-title" style="color: var(--accent-gold); margin-bottom: 25px;">کیٹیگری منتخب کریں (Select Category)</h2>
+            <button class="btn cat-btn" onclick="selectCategory('islamic')">🕌 Islamic Knowledge (15 Stages)</button>
+            <button class="btn cat-btn" onclick="selectCategory('gk')">🌍 World & General Knowledge (15 Stages)</button>
+            <button class="btn cat-btn" onclick="selectCategory('science')">🔬 Science & Technology (15 Stages)</button>
+            <button class="btn cat-btn" onclick="selectCategory('history')">📜 History & Civilizations (15 Stages)</button>
         </div>
 
-        <!-- Quiz Screen -->
-        <div id="quiz-state" class="screen ltr">
-            <div class="header-controls">
-                <button id="muteBtn" class="mute-btn" onclick="toggleMute()">
-                    <span>🔊 Sound: ON</span>
-                    <div class="equalizer-container" id="eq-viz">
-                        <div class="eq-bar"></div>
-                        <div class="eq-bar"></div>
-                        <div class="eq-bar"></div>
-                        <div class="eq-bar"></div>
-                    </div>
-                </button>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <div id="streakDisplay" style="font-weight:900; color:#ffaa00; font-size: 1.25rem;">🔥 STREAK: 0/20</div>
-                </div>
+        <div id="quiz-screen" class="hidden">
+            <div id="royale-banner" class="royale-stage-banner hidden">👑 GOLDEN PRINCE ROYALE FINAL STAGE 👑</div>
+
+            <div id="lifelines-container">
+                <button class="lifeline-btn" id="life-5050" onclick="use5050()">✂️ 50:50</button>
+                <button class="lifeline-btn" id="life-poll" onclick="useAudiencePoll()">📊 Audience Poll</button>
+                <button class="lifeline-btn" id="life-skip" onclick="useSkip()">⏭️ Skip</button>
+                <button class="lifeline-btn" id="life-time" onclick="useTimeFreeze()">⌛ Freeze Time</button>
+                <button class="lifeline-btn" id="life-double" onclick="useDoubleCrowns()">👑 2x Crowns</button>
             </div>
 
-            <div class="medals-display">
-                <div class="medal-item" id="medal-bronze" style="color: #cd7f32;">
-                    <div class="medal-icon">🥉</div>
-                    <div class="medal-name">Scholar</div>
-                </div>
-                <div class="medal-item" id="medal-silver" style="color: #c0c0c0;">
-                    <div class="medal-icon">🥈</div>
-                    <div class="medal-name">Knight</div>
-                </div>
-                <div class="medal-item" id="medal-gold" style="color: #ffd700;">
-                    <div class="medal-icon">👑</div>
-                    <div class="medal-name">Prince</div>
-                </div>
-            </div>
-
-            <div class="stats-hud">
-                <div class="stat-item">💰 Coins: <span id="coinCount" style="color:#ffd700; font-weight:bold;">0</span></div>
-                <div class="stat-item">🛡️ Shield Active: <span id="shieldStatus" style="color:#00ffaa; font-weight:bold;">Inactive</span></div>
-            </div>
-
-            <div class="top-bar">
-                <div class="score-badge" id="score-container">Correct Streak: <span id="correct-count">0</span>/20</div>
-                <div class="level-badge" id="level-display">Level: 1</div>
-            </div>
-
-            <div class="xp-container">
-                <span>Victory Journey</span>
-                <div class="xp-track">
-                    <div id="xpBar" class="xp-bar"></div>
-                </div>
-                <span id="xpText">0 / 20 Correct</span>
-            </div>
-
-            <div class="timer-container">
-                <div id="timerBar" class="timer-bar"></div>
-            </div>
-
-            <div class="lifelines-container">
-                <button id="lifeline-fifty" class="lifeline-btn" onclick="useFiftyFifty()">50-50</button>
-                <button id="lifeline-skip" class="lifeline-btn" onclick="useSkip()">Skip ⏭️</button>
-                <button id="lifeline-double" class="lifeline-btn" onclick="useDoubleChance()">Double Chance 🌟</button>
-                <button id="lifeline-poll" class="lifeline-btn" onclick="useAudiencePoll()">Audience Poll 📊</button>
-            </div>
-            
-            <h1 class="question-box" id="question">Loading Question...</h1>
-            
-            <div class="options-grid" id="options-container"></div>
-
-            <div id="autoNextIndicator" class="auto-next-indicator">Next Question in 3s...</div>
+            <div id="timer-box">⏱️ <span id="timer-count">30</span>s</div>
+            <div id="timer-container"><div id="timer-bar"></div></div>
+            <h3 id="question-text" style="font-size: 1.3em; margin: 20px 0; line-height: 1.5;">Sawal...</h3>
+            <div id="options-container"></div>
+            <div id="explanation-box" class="hidden">💡 <span id="explanation-text"></span></div>
         </div>
 
-        <!-- Winner Screen -->
-        <div id="winner-state" class="screen ltr">
-            <div class="trophy" aria-hidden="true">🏆</div>
-            <h1 class="winner-title" id="winner-heading">You are a Golden Prince!</h1>
-            <p id="winner-sub" style="font-size: 1.5rem; color: #ffea00; margin-bottom: 30px;">You have conquered all 20 challenges consecutively!</p>
-            <button class="option-btn center-text" style="margin: 0 auto; display: block;" onclick="restartGame()">Play Again</button>
-        </div>
-
-        <!-- Spin Wheel Modal -->
-        <div class="modal-overlay" id="spinModal">
-            <div class="modal-content">
-                <h2 style="color: #ffaa00; margin-bottom: 15px;">🎰 Lucky Spin</h2>
-                <p id="spinResultText" style="margin-bottom: 20px;">Spin the wheel to win bonus Coins or a Shield!</p>
-                <button class="action-btn" id="spinBtn" onclick="doSpin()">SPIN NOW!</button>
-                <button class="secondary-btn" onclick="closeModals()" style="margin-top: 15px;">Close</button>
-            </div>
-        </div>
-
-        <!-- Shop Modal -->
-        <div class="modal-overlay" id="shopModal">
-            <div class="modal-content">
-                <h2 style="color: #00f0ff; margin-bottom: 15px;">🛍️ Item Shop</h2>
-                <p style="margin-bottom: 15px;">Buy a Protection Shield to save your streak from wrong answers!</p>
-                <div style="font-size: 1.2rem; margin-bottom: 20px; color: #ffd700;">Price: 30 Coins 💰</div>
-                <button class="action-btn" onclick="buyShield()">Buy Shield 🛡️</button>
-                <button class="secondary-btn" onclick="closeModals()" style="margin-top: 15px;">Close</button>
+        <div id="result-screen" class="hidden">
+            <div class="game-over-box">
+                <h2 id="result-title" style="font-size: 2em; color: var(--accent-gold);">Game Over!</h2>
+                <p id="result-desc" style="font-size: 1.2em; line-height: 1.6;"></p>
+                <div class="stat-grid">
+                    <div>🔥 Max Streak: <b id="stat-max-streak">0</b></div>
+                    <div>🎯 Accuracy: <b id="stat-accuracy">0%</b></div>
+                </div>
+                <button class="btn" onclick="restartGame()" id="btn-restart">دوبارہ کھیلیں (Play Again)</button>
             </div>
         </div>
 
     </div>
 
+    <!-- Audience Poll Modal -->
+    <div id="poll-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="poll-modal-title" style="color: var(--accent-gold);">📊 Audience Poll</h3>
+            <div id="poll-results-body"></div>
+            <button class="btn" onclick="closePollModal()" style="margin-top: 20px;">OK</button>
+        </div>
+    </div>
+
     <script>
-        const localizedUI = {
-            en: {
-                start: "Start Game",
-                categoryLabel: "Select Category:",
-                categories: {
-                    islamic: "🕌 Islamic Knowledge",
-                    science: "🔬 Science & Technology",
-                    history: "📜 History",
-                    general_knowledge: "🌍 General Knowledge",
-                    sports: "⚽ Sports"
-                },
-                score: "Correct Streak",
-                level: "Level",
-                qof: "Question",
-                winTitle: "You are a Golden Prince!",
-                winSub: "You have conquered all 20 challenges consecutively!",
-                playAgain: "Play Again"
-            },
+        let crowns = 0;
+        let currentStage = 1;
+        let soundEnabled = true;
+        let selectedCategory = 'islamic';
+        let currentLang = 'ur';
+        let activeQuestions = [];
+        let currentQIndex = 0;
+        let timerInterval;
+        let maxTimeForStage = 30;
+        let timeLeft = 30;
+        let isTimeFrozen = false;
+        let isDoubleCrownsActive = false;
+        let currentQuestionObj = null;
+
+        // Stats & Highscores
+        let currentStreak = 0;
+        let maxStreak = 0;
+        let correctAnswersCount = 0;
+        let totalQuestionsAnswered = 0;
+        let highScore = parseInt(localStorage.getItem('gp_v1_high_score') || '0');
+
+        let usedLifelines = { '5050': false, 'poll': false, 'skip': false, 'time': false, 'double': false };
+
+        const uiTranslations = {
             ur: {
-                start: "کھیل شروع کریں",
-                categoryLabel: "کیٹیگری منتخب کریں:",
-                categories: {
-                    islamic: "🕌 اسلامی معلومات",
-                    science: "🔬 سائنس اور ٹیکنالوجی",
-                    history: "📜 تاریخ",
-                    general_knowledge: "🌍 جنرل نالج",
-                    sports: "⚽ کھیل"
-                },
-                score: "مسلسل درست جوابات",
-                level: "لیول",
-                qof: "سوال",
-                winTitle: "آپ گولڈن پرنس ہیں!",
-                winSub: "آپ نے تمام 20 چیلنجز کامیابی سے مکمل کر لیے ہیں!",
-                playAgain: "دوباره کھیلیں"
+                moneyBag: "گولڈن کراؤنز", stage: "اسٹیج", catTitle: "کیٹیگری منتخب کریں",
+                restartBtn: "دوبارہ کھیلیں", timeUp: "وقت ختم ہو گیا!", wrongAns: "غلط جواب!",
+                stageCleared: "مبارک ہو! آپ گولڈن پرنس کے تمام مراحل فتح کر چکے ہیں!", soundOn: "آن", soundOff: "آف", pollTitle: "عوام کی رائے"
             },
-            ar: {
-                start: "ابدأ اللعبة",
-                categoryLabel: "اختر الفئة:",
-                categories: {
-                    islamic: "🕌 المعرفة الإسلامية",
-                    science: "🔬 العلوم والتكنولوجيا",
-                    history: "📜 التاريخ",
-                    general_knowledge: "🌍 الثقافة العامة",
-                    sports: "⚽ الرياضة"
-                },
-                score: "سلسلة الإجابات الصحيحة",
-                level: "المستوى",
-                qof: "السؤال",
-                winTitle: "أنت الأمير الذهبي!",
-                winSub: "لقد تغلبت على جميع التحديات العشرين بنجاح!",
-                playAgain: "اللعب مجدداً"
+            en: {
+                moneyBag: "Golden Crowns", stage: "Stage", catTitle: "Select Category",
+                restartBtn: "Play Again", timeUp: "Time is Up!", wrongAns: "Wrong Answer!",
+                stageCleared: "Congratulations! You have conquered all Golden Prince Stages!", soundOn: "ON", soundOff: "OFF", pollTitle: "Audience Poll Results"
             },
             hi: {
-                start: "खेल शुरू करें",
-                categoryLabel: "श्रेणी चुनें:",
-                categories: {
-                    islamic: "🕌 इस्लामिक ज्ञान",
-                    science: "🔬 विज्ञान और तकनीक",
-                    history: "इतिहास",
-                    general_knowledge: "🌍 सामान्य ज्ञान",
-                    sports: "⚽ खेल"
-                },
-                score: "लगातार सही जवाब",
-                level: "लेवल",
-                qof: "सवाल",
-                winTitle: "आप गोल्डन प्रिंस हैं!",
-                winSub: "आपने सभी 20 चुनौतियों को सफलतापूर्वक पार कर लिया है!",
-                playAgain: "फिर से खेलें"
+                moneyBag: "गोल्डन क्राउन्स", stage: "चरण", catTitle: "श्रेणी चुनें",
+                restartBtn: "फिर से खेलें", timeUp: "समय समाप्त हो गया!", wrongAns: "गलत उत्तर!",
+                stageCleared: "बधाई हो! आपने गोल्डन प्रिंस के सभी चरणों को जीत लिया है!", soundOn: "चालू", soundOff: "बंद", pollTitle: "दर्शकों की राय"
+            },
+            ar: {
+                moneyBag: "التيجان الذهبية", stage: "المرحلة", catTitle: "اختر الفئة",
+                restartBtn: "إعادة اللعب", timeUp: "انتهى الوقت!", wrongAns: "إجابة خاطئة!",
+                stageCleared: "تهانينا! لقد حققت اللقب وشعرت كمجد الأمير الذهبي!", soundOn: "مفعل", soundOff: "معطل", pollTitle: "نتيجة تصويت الجمهور"
             }
         };
 
-        const quizData = {
-            islamic: [
-                { q: { ur: "قرآن پاک کی سب سے طویل سورت کون سی ہے؟", en: "Which is the longest Surah in the Holy Quran?", ar: "ما هي أطول سورة في القرآن الكريم؟", hi: "कुरान की सबसे लंबी सूरह कौन सी है?" }, a: { ur: ["سورہ البقرہ", "سورہ آل عمران", "سورہ النساء", "سورہ یٰسین"], en: ["Surah Al-Baqarah", "Surah Ali 'Imran", "Surah An-Nisa", "Surah Yaseen"], ar: ["سورة البقرة", "سورة آل عمران", "سورة النساء", "سورة يس"], hi: ["सूरह अल-बकराह", "सूरह आल इमरान", "सूरह अन-निसा", "सूरह यासीन"] }, c: 0 },
-                { q: { ur: "اسلام کے پہلے موذن کا نام کیا ہے؟", en: "Who was the first Muazzin of Islam?", ar: "من هو أول مؤذن في الإسلام؟", hi: "اسلام کے پہلے muazzin کون تھے؟" }, a: { ur: ["حضرت بلال حبشیؓ", "حضرت سلمان فارسیؓ", "حضرت ابوذر غفاریؓ", "حضرت عمار بن یاسرؓ"], en: ["Hazrat Bilal (RA)", "Hazrat Salman Farsi (RA)", "Hazrat Abu Dhar (RA)", "Hazrat Ammar (RA)"], ar: ["بلال بن رباح", "سلمان الفارسي", "أبو ذر الغفاري", "عمار بن ياسر"], hi: ["हज़रत बिलाल (र.अ.)", "हज़रت सलमान फ़ारसी (र.अ.)", "हज़रत अबू धर (र.अ.)", "हज़रत अम्मार (र.अ.)"] }, c: 0 },
-                { q: { ur: "قرآن مجید کی کس سورت میں بسم اللہ دو بار آئی ہے؟", en: "In which Surah of the Quran does Bismillah occur twice?", ar: "في أي سورة من القرآن وردت البسملة مرتين؟", hi: "कुरान की किस सूरह में बिस्मिल्लाह दो बार आई है?" }, a: { ur: ["سورہ النمل", "سورہ البقرہ", "سورہ التوبہ", "سورہ الرحمٰن"], en: ["Surah Al-Naml", "Surah Al-Baqarah", "Surah At-Tawbah", "Surah Ar-Rahman"], ar: ["سورة النمل", "سورة البقرة", "سورة التوبة", "سورة الرحمن"], hi: ["सूरह अल-नमल", "सूरह अल-बकराह", "सूरह अत-तौबा", "सूरह अर-रहमान"] }, c: 0 },
-                { q: { ur: "غزوہ بدر کس ہجری سال میں لڑی گئی؟", en: "In which Hijri year was the Battle of Badr fought?", ar: "في أي عام هجري وقعت غزوة بدر؟", hi: "बद्र की लड़ाई किस हिजरी वर्ष में लड़ी गई थी?" }, a: { ur: ["2 ہجری", "3 ہجری", "4 ہجری", "1 ہجری"], en: ["2 AH", "3 AH", "4 AH", "1 AH"], ar: ["2 هـ", "3 هـ", "4 هـ", "1 هـ"], hi: ["2 हिजरी", "3 हिजरी", "4 हिजरी", "1 हिजरी"] }, c: 0 }
-            ],
-            science: [
-                { q: { ur: "پانی کا کیمیائی فارمولا کیا ہے؟", en: "What is the chemical formula of water?", ar: "ما هي الصيغة الكيميائية للماء؟", hi: "पानी का रासायनिक सूत्र क्या है?" }, a: { ur: ["H2O", "CO2", "NaCl", "O2"], en: ["H2O", "CO2", "NaCl", "O2"], ar: ["H2O", "CO2", "NaCl", "O2"], hi: ["H2O", "CO2", "NaCl", "O2"] }, c: 0 }
-            ],
-            history: [], general_knowledge: [], sports: []
+        const quizDatabase = {
+            islamic: {
+                ur: [
+                    { q: "اسلام کا پہلا رکن کون سا ہے؟", options: ["نماز", "توحید و رسالت", "روزه", "زکوٰۃ"], correct: 1, info: "توحید و رسالت (کلمہ شہادت) اسلام کا بنیادی اور پہلا رکن ہے۔" },
+                    { q: "قرآن مجید میں کل کتنے پارے ہیں؟", options: ["20", "25", "30", "40"], correct: 2, info: "قرآن پاک میں کل 30 پارے اور 114 سورتیں ہیں۔" },
+                    { q: "قرآن کی سب سے بڑی سورت کون سی ہے؟", options: ["سورۃ البقرہ", "سورۃ یاسین", "سورۃ الرحمن", "سورۃ الفاتحہ"], correct: 0, info: "سورۃ البقرہ قرآن پاک کی طویل ترین سورت ہے جس میں 286 آیات ہیں۔" },
+                    { q: "مسجد اقصی کس شہر میں واقع ہے؟", options: ["مکہ", "مدینہ", "القدس (یروشلم)", "قاہرہ"], correct: 2, info: "مسجد اقصی القدس میں واقع ہے اور یہ مسلمانوں کا پہلا قبلہ ہے۔" },
+                    { q: "خاتم النبیین کے معنی کیا ہیں؟", options: ["آخری نبی", "پہلے نبی", "نبیوں کے سردار", "نبیوں کے بھائی"], correct: 0, info: "خاتم النبیین سے مراد آخری نبی حضرت محمد ﷺ ہیں، جن کے بعد کوئی نبی نہیں آئے گا۔" },
+                    { q: "حج کس مہینے میں ادا کیا جاتا ہے؟", options: ["رمضان", "شوال", "ذوالالحجہ", "محرّم"], correct: 2, info: "حج اسلامی سال کے آخری مہینے ذوالالحجہ کی 8 سے 12 تاریخ تک ادا کیا جاتا ہے۔" },
+                    { q: "اسلام کے پہلے خلیفہ کون تھے؟", options: ["حضرت عمر (رض)", "حضرت ابو بکر (رض)", "حضرت عثمان (رض)", "حضرت علی (رض)"], correct: 1, info: "حضرت ابو بکر صدیق (رض) مسلمانوں کے پہلے خلیفہ راشد تھے۔" },
+                    { q: "نمازِ کسوف کس موقع پر پڑھی جاتی ہے؟", options: ["چاند گرہن", "سورج گرہن", "بارش کی دعا", "زلزلہ"], correct: 1, info: "نماز کسوف سورج گرہن کے وقت پڑھی جاتی ہے۔" },
+                    { q: "غارِ حرا کس پہاڑ پر واقع ہے؟", options: ["جبلِ نور", "جبلِ ثور", "جبلِ احد", "جبلِ عرفات"], correct: 0, info: "غار حرا جبل نور (مکہ مکرمہ) میں واقع ہے جہاں پہلی وحی نازل ہوئی۔" },
+                    { q: "سب سے پہلی مسجد جو اسلام میں بنائی گئی؟", options: ["مسجدِ حرام", "مسجدِ نبوی", "مسجدِ قباء", "مسجدِ اقصی"], correct: 2, info: "مسجد قباء اسلام کی تاریخ کی پہلی مسجد ہے۔" },
+                    { q: "قرآن مجید کی کس سورت کو 'قرآن کا دل' کہا جاتا ہے؟", options: ["سورۃ الرحمٰن", "سورۃ یاسین", "سورۃ الملک", "سورۃ الفاتحہ"], correct: 1, info: "حدیث پاک کی رو سے سورۃ یاسین کو قرآن پاک کا دل کہا گیا ہے۔" },
+                    { q: "حضرت محمد ﷺ کی والدہ ماجدہ کا نام کیا ہے؟", options: ["حضرت خدیجہ (رض)", "حضرت آمنہ (رض)", "حضرت فاطمہ (رض)", "حضرت حلیمہ (رض)"], correct: 1, info: "آپ ﷺ کی والدہ کا اسمِ گرامی حضرت آمنہ (رض) ہے۔" },
+                    { q: "غزوہِ بدر کس ہجری میں پیش آیا؟", options: ["2 ہجری", "3 ہجری", "5 ہجری", "8 ہجری"], correct: 0, info: "غزوہ بدر 17 رمضان 2 ہجری کو پیش آیا۔" },
+                    { q: "قرآن مجید میں کل کتنی منزلیں ہیں؟", options: ["5", "7", "10", "12"], correct: 1, info: "قرآن مجید میں کل 7 منزلیں ہیں۔" },
+                    { q: "👑 گولڈن پرنس فائنل: قرآن پاک کی کس سورت میں بسم اللہ دو بار آئی ہے؟", options: ["سورۃ النمل", "سورۃ التوبہ", "سورۃ الکہف", "سورۃ یاسین"], correct: 0, info: "سورۃ النمل کی ایک آیت میں حضرت سلیمان علیہ السلام کے خط کا ذکر ہے جہاں دوسری بار بسم اللہ آئی ہے۔" }
+                ],
+                en: [
+                    { q: "What is the first pillar of Islam?", options: ["Namaz", "Shahada (Faith)", "Roza", "Zakat"], correct: 1, info: "Shahada is the foundation and 1st pillar of Islam." },
+                    { q: "How many Juz (paras) are in the Holy Quran?", options: ["20", "25", "30", "40"], correct: 2, info: "The Quran contains 30 Juz and 114 Surahs." },
+                    { q: "Which is the longest Surah in the Quran?", options: ["Surah Al-Baqarah", "Surah Yaseen", "Surah Ar-Rahman", "Surah Al-Fatiha"], correct: 0, info: "Surah Al-Baqarah is the longest Surah with 286 verses." },
+                    { q: "In which city is Al-Aqsa Mosque located?", options: ["Makkah", "Madinah", "Jerusalem", "Cairo"], correct: 2, info: "Al-Aqsa Mosque is situated in Jerusalem and was the first Qibla." },
+                    { q: "What is the meaning of Khatam-un-Nabiyyin?", options: ["Last Prophet", "First Prophet", "Leader of Prophets", "Brother of Prophets"], correct: 0, info: "It means Seal/Last of the Prophets, Prophet Muhammad (PBUH)." },
+                    { q: "In which Islamic month is Hajj performed?", options: ["Ramadan", "Shawwal", "Dhul Hijjah", "Muharram"], correct: 2, info: "Hajj occurs from 8th to 12th Dhul Hijjah." },
+                    { q: "Who was the first Caliph of Islam?", options: ["Hazrat Umar (RA)", "Hazrat Abu Bakr (RA)", "Hazrat Usman (RA)", "Hazrat Ali (RA)"], correct: 1, info: "Hazrat Abu Bakr (RA) was the 1st Rashidun Caliph." },
+                    { q: "Namaz-e-Kusoof is offered during?", options: ["Lunar Eclipse", "Solar Eclipse", "Drought", "Earthquake"], correct: 1, info: "Kusoof prayer is offered during a solar eclipse." },
+                    { q: "In which mountain is Cave Hira located?", options: ["Jabal al-Nour", "Jabal Thawr", "Jabal Uhud", "Jabal Arafat"], correct: 0, info: "Cave Hira is inside Jabal al-Nour where the first revelation descended." },
+                    { q: "Which was the first mosque built in Islam?", options: ["Masjid al-Haram", "Masjid an-Nabawi", "Masjid Quba", "Al-Aqsa Mosque"], correct: 2, info: "Masjid Quba was built first by Prophet Muhammad (PBUH)." },
+                    { q: "Which Surah is known as the Heart of the Quran?", options: ["Surah Ar-Rahman", "Surah Yaseen", "Surah Al-Mulk", "Surah Al-Fatiha"], correct: 1, info: "Surah Yaseen is described as the heart of the Quran in Hadith." },
+                    { q: "What was the name of Prophet Muhammad's (PBUH) mother?", options: ["Hazrat Khadija (RA)", "Hazrat Amina (RA)", "Hazrat Fatima (RA)", "Hazrat Halima (RA)"], correct: 1, info: "His mother's name was Hazrat Amina (RA)." },
+                    { q: "In which Hijri year did the Battle of Badr take place?", options: ["2 AH", "3 AH", "5 AH", "8 AH"], correct: 0, info: "Battle of Badr was fought in 2 AH on 17th Ramadan." },
+                    { q: "How many Manzils (stages) are in the Holy Quran?", options: ["5", "7", "10", "12"], correct: 1, info: "The Quran is divided into 7 Manzils." },
+                    { q: "👑 Golden Prince Final: In which Surah does Bismillah appear twice?", options: ["Surah Al-Naml", "Surah At-Tawbah", "Surah Al-Kahf", "Surah Yaseen"], correct: 0, info: "Bismillah is written twice in Surah Al-Naml (verse 30)." }
+                ],
+                hi: [
+                    { q: "इस्लाम का पहला स्तंभ कौन सा है?", options: ["नमाज़", "कलमा (शाहदा)", "रोज़ा", "ज़कात"], correct: 1, info: "कलमा/शाहदा इस्लाम की नींव है।" },
+                    { q: "क़ुरआन में कुल कितने पारे हैं?", options: ["20", "25", "30", "40"], correct: 2, info: "क़ुरआन में 30 पारे और 114 सूरा हैं।" },
+                    { q: "क़ुरआन की सबसे बड़ी सूरा कौन सी है?", options: ["सूरा अल-बक़रह", "सूरा यासीन", "सूरा अर-रहमान", "सूरा अल-फ़ातिहा"], correct: 0, info: "सूरा अल-बक़रह सबसे लंबी सूरा है (286 आयतें)।" },
+                    { q: "मस्जिद अल-अक्सा किस शहर में है?", options: ["मक्का", "मदीना", "यरूशलम", "काहिरा"], correct: 2, info: "मस्जिद अल-अक्सा यरूशलम में स्थित है।" },
+                    { q: "खातम-उन-नबियीन का क्या अर्थ है?", options: ["अंतिम पैगंबर", "पहले पैगंबर", "पैगंबरों के नेता", "इनमें से कोई नहीं"], correct: 0, info: "इसका अर्थ अंतिम पैगंबर हज़रत मोहम्मद (स.अ.व) है।" },
+                    { q: "हज किस इस्लामी महीने में किया जाता है?", options: ["रमज़ान", "शव्वाल", "ज़ुल-हिज्जा", "मुहर्रम"], correct: 2, info: "हज ज़ुल-हिज्जा के महीने में होता है।" },
+                    { q: "इस्लाम के पहले ख़लीफ़ा कौन थे?", options: ["हज़रत उमर (रजि.)", "हज़रत अबू बक्र (रजि.)", "हज़रत उस्मान (रजि.)", "हज़रत अली (रजि.)"], correct: 1, info: "हज़रत अबू बक्र (रजि.) पहले ख़लीफ़ा थे।" },
+                    { q: "नमाज़-ए-कुसूफ कब पढ़ी जाती है?", options: ["चंद्रग्रहण", "सूर्यग्रहण", "बारिश की दुआ", "भूकंप"], correct: 1, info: "नमाज़-ए-कुसूफ सूर्यग्रहण के समय पढ़ी जाती है।" },
+                    { q: "ग़ार-ए-हिरा किस पहाड़ पर स्थित है?", options: ["जबल अल-नूर", "जबल सौर", "जबल उहुद", "जबल अराफ़ात"], correct: 0, info: "ग़ार-ए-हिरा जबल अल-नूर में स्थित है।" },
+                    { q: "इस्लाम की सबसे पहली मस्जिद कौन सी है?", options: ["मस्जिद अल-हरम", "मस्जिद अन-नबवी", "मस्जिद क़ुबा", "मस्जिद अल-अक्सा"], correct: 2, info: "मस्जिद क़ुबा सबसे पहली मस्जिद है।" },
+                    { q: "क़ुरआन का दिल किस सूरा को कहा जाता है?", options: ["सूरा अर-रहमान", "सूरा यासीन", "सूरा अल-मुल्क", "सूरा अल-फ़ातिहा"], correct: 1, info: "सूरा यासीन को क़ुरआन का दिल कहा जाता है।" },
+                    { q: "हज़रत मोहम्मद (स.अ.व) की माता का नाम क्या था?", options: ["हज़रत ख़दीजा (रजि.)", "हज़रत आमिना (रजि.)", "हज़रत फ़ातिमा (रजि.)", "हज़रत हलीमा (रजि.)"], correct: 1, info: "आपकी माता का नाम हज़रत आमिना था।" },
+                    { q: "बद्र की लड़ाई किस हिजरी वर्ष में हुई थी?", options: ["2 हिजरी", "3 हिजरी", "5 हिजरी", "8 हिजरी"], correct: 0, info: "बद्र का युद्ध 2 हिजरी में हुआ था।" },
+                    { q: "क़ुरआन में कुल कितनी मंज़िलें हैं?", options: ["5", "7", "10", "12"], correct: 1, info: "क़ुरआन में कुल 7 मंज़िलें हैं।" },
+                    { q: "👑 गोल्डन प्रिंस फाइनल: क़ुरआन की किस सूरा में बिस्मिल्लाह दो बार आई है?", options: ["सूरा अन-नम्ल", "सूरा अत-तौबा", "सूरा अल-कहफ़", "सूरा यासीन"], correct: 0, info: "सूरा अन-नम्ल में बिस्मिल्लाह दो बार है।" }
+                ],
+                ar: [
+                    { q: "ما هو الركن الأول من أركان الإسلام؟", options: ["الصلاة", "الشهادتان", "الصوم", "الزكاة"], correct: 1, info: "الشهادتان هما أساس وركن الإسلام الأول." },
+                    { q: "كم عدد أجزاء القرآن الكريم؟", options: ["20", "25", "30", "40"], correct: 2, info: "يتكون القرآن الكريم من 30 جزءاً و 114 سورة." },
+                    { q: "ما هي أطول سورة في القرآن الكريم؟", options: ["سورة البقرة", "سورة يس", "سورة الرحمن", "سورة الفاتحة"], correct: 0, info: "سورة البقرة هي أطول سورة وتحتوي على 286 آية." },
+                    { q: "في أي مدينة يقع المسجد الأقصى؟", options: ["مكة المكرمة", "المدينة المنورة", "القدس", "القاهرة"], correct: 2, info: "يقع المسجد الأقصى في مدينة القدس وهو أولى القبلتين." },
+                    { q: "ما معنى خاتم النبيين؟", options: ["آخر الأنبياء", "أول الأنبياء", "سيد الأنبياء", "لا شيء مما سبق"], correct: 0, info: "تعني آخر الأنبياء وهو النبي محمد صلى الله عليه وسلم." },
+                    { q: "في أي شهر هجري تؤدى الحج؟", options: ["رمضان", "شوال", "ذو الحجة", "محرم"], correct: 2, info: "يؤدى الحج في شهر ذي الحجة." },
+                    { q: "من هو أول الخلفاء الراشدين؟", options: ["عمر بن الخطاب", "أبو بكر الصديق", "عثمان بن عفان", "علي بن أبي طالب"], correct: 1, info: "أبو بكر الصديق هو أول الخلفاء الراشدين." },
+                    { q: "متى تصلى صلاة الكسوف؟", options: ["خسوف القمر", "كسوف الشمس", "طلب المطر", "الزلزال"], correct: 1, info: "تصلى صلاة الكسوف عند وقوع كسوف الشمس." },
+                    { q: "في أي جبل يقع غار حراء؟", options: ["جبل النور", "جبل ثور", "جبل أحد", "جبل عرفات"], correct: 0, info: "يقع غار حراء في جبل النور بمكة المكرمة." },
+                    { q: "ما هي أول مسجد بني في الإسلام؟", options: ["المسجد الحرام", "المسجد النبوي", "مسجد قباء", "المسجد الأقصى"], correct: 2, info: "مسجد قباء هو أول مسجد بني في الإسلام." },
+                    { q: "ما هي السورة التي تلقب بـ 'قلب القرآن'؟", options: ["سورة الرحمن", "سورة يس", "سورة الملك", "سورة الفاتحة"], correct: 1, info: "سورة يس تسمى قلب القرآن كما ورد في الأحاديث." },
+                    { q: "ما اسم والدة النبي محمد صلى الله عليه وسلم؟", options: ["خديجة بنت خويلد", "آمنة بنت وهب", "فاطمة الزهراء", "حليمة السعدية"], correct: 1, info: "اسم والدته آمنة بنت وهب." },
+                    { q: "في أي سنة هجرية وقعت غزوة بدر الكبرى؟", options: ["2 هجرية", "3 هجرية", "5 هجرية", "8 هجرية"], correct: 0, info: "وقعت غزوة بدر في 17 رمضان سنة 2 هجرية." },
+                    { q: "كم عدد منازل القرآن الكريم؟", options: ["5", "7", "10", "12"], correct: 1, info: "يتكون القرآن من 7 منازل." },
+                    { q: "👑 نهائي الأمير الذهبي: ما هي السورة التي وردت فيها البسملة مرتين؟", options: ["سورة النمل", "سورة التوبة", "سورة الكهف", "سورة يس"], correct: 0, info: "وردت البسملة مرتين في سورة النمل (في الآية 30)." }
+                ]
+            },
+            gk: {
+                ur: [
+                    { q: "دنیا کا سب سے بڑا سمندر کون سا ہے؟", options: ["بحیرہ ہند", "بحر الکاہل (Pacific)", "بحر اوقیانوس", "بحر منجمد شمالی"], correct: 1, info: "بحر الکاہل زمین کا سب سے بڑا اور گہرا سمندر ہے۔" },
+                    { q: "پاکستان کا قومی کھیل کون سا ہے؟", options: ["کرکٹ", "فٹ بال", "ہاکی", "اسکوائش"], correct: 2, info: "فیلڈ ہاکی پاکستان کا قومی کھیل ہے۔" },
+                    { q: "دنیا کا سب سے اونچا پہاڑ کون سا ہے؟", options: ["کے ٹو", "ماؤنٹ ایورسٹ", "نانگا پربت", "ہمالیہ"], correct: 1, info: "ماؤنٹ ایورسٹ نیپال میں ہے جس کی اونچائی 8,848 میٹر ہے۔" },
+                    { q: "جاپان کا دارالحکومت کون سا ہے؟", options: ["بیجنگ", "سیول", "ٹوکیو", "بینکاک"], correct: 2, info: "ٹوکیو جاپان کا دارالحکومت اور گنجان ترین شہر ہے۔" },
+                    { q: "رقبے کے لحاظ سے دنیا کا سب سے بڑا ملک کون سا ہے؟", options: ["چین", "امریکہ", "روس", "کینیڈا"], correct: 2, info: "روس رقبے کے لحاظ سے دنیا کا سب سے بڑا ملک ہے۔" },
+                    { q: "دنیا کی سب سے لمبی ندی کون سی ہے؟", options: ["سندھ", "سیحون", "نیل", "ایمیزون"], correct: 2, info: "دریاۓ نیل افریقہ میں واقع لمبا ترین دریا (6,650 کلومیٹر) ہے۔" },
+                    { q: "دیوارِ چین کس ملک میں واقع ہے؟", options: ["بھارت", "چین", "منگولیا", "کوریا"], correct: 1, info: "یہ قديم ترین حفاظتی دیوار چین میں واقع ہے۔" },
+                    { q: "دنیا کا سب سے چھوٹا ملک کون سا ہے؟", options: ["موناکو", "مالدیپ", "ویتیکن سٹی", "سنگاپور"], correct: 2, info: "ویتیکن سٹی دنیا کا سب سے چھوٹا خودمختار ملک ہے۔" },
+                    { q: "ایفل ٹاور کس شہر میں واقع ہے؟", options: ["لندن", "پیرس", "نیویارک", "روم"], correct: 1, info: "ایفل ٹاور پیرس، فرانس میں واقع ہے۔" },
+                    { q: "شطرنج (Chess) کا کھیل کس ملک سے شروع ہوا؟", options: ["چین", "بھارت", "ایران", "مصر"], correct: 1, info: "شطرنج کی شروعات قدیم ہندوستان (چترنگا) سے ہوئی۔" },
+                    { q: "دنیا کا سب سے بڑا صحرا کون سا ہے؟", options: ["صحراۓ اعظم (Sahara)", "گوبی", "تھر", "انٹارکٹک صحرا"], correct: 3, info: "انٹارکٹیکا کا سرد صحرا دنیا کا سب سے بڑا صحرا ہے (گرم صحراؤں میں سہاراء پہلے نمبر پر ہے)۔" },
+                    { q: "کمپیوٹر کی دنیا میں WWW کا کیا مطلب ہے؟", options: ["World Wide Web", "World Wide Work", "World Wide Windows", "Wide World Web"], correct: 0, info: "WWW کا مطلب World Wide Web ہے جسے تیم برنرز لی نے ایجاد کیا۔" },
+                    { q: "اقوامِ متحدہ (UN) کا ہیڈ کوارٹر کہاں واقع ہے؟", options: ["جنیوا", "نیویارک", "لندن", "پیرس"], correct: 1, info: "اقوام متحدہ کا مرکزی دفتر نیویارک، امریکہ میں ہے۔" },
+                    { q: "نوبل پرائز حاصل کرنے والے پہلے مسلمان کون تھے؟", options: ["ڈاکٹر عبدالسلام", "انور سادات", "یاسر عرفات", "احمد زیویل"], correct: 1, info: "مصر کے صدر انور سادات کو 1978 میں نوبل امن انعام ملا۔" },
+                    { q: "👑 گولڈن پرنس فائنل: دنیا کا سب سے بڑا جزیرہ (Island) کون سا ہے؟", options: ["گرین لینڈ", "مڈغاسکر", "بورنیو", "سوماترا"], correct: 0, info: "گرین لینڈ دنیا کا سب سے بڑا جزیرہ ہے۔" }
+                ],
+                en: [
+                    { q: "Which is the largest ocean in the world?", options: ["Indian Ocean", "Pacific Ocean", "Atlantic Ocean", "Arctic Ocean"], correct: 1, info: "Pacific Ocean is the largest and deepest ocean." },
+                    { q: "What is the national sport of Pakistan?", options: ["Cricket", "Football", "Hockey", "Squash"], correct: 2, info: "Field Hockey is the national sport of Pakistan." },
+                    { q: "What is the highest mountain peak in the world?", options: ["K2", "Mount Everest", "Nanga Parbat", "Kangchenjunga"], correct: 1, info: "Mount Everest stands at 8,848 meters in Nepal." },
+                    { q: "What is the capital city of Japan?", options: ["Beijing", "Seoul", "Tokyo", "Bangkok"], correct: 2, info: "Tokyo is the capital and largest city of Japan." },
+                    { q: "Which is the largest country by area?", options: ["China", "USA", "Russia", "Canada"], correct: 2, info: "Russia is the largest country by land area." },
+                    { q: "Which is the longest river in the world?", options: ["Indus", "Amazon", "Nile", "Yangtze"], correct: 2, info: "The Nile River in Africa is approx 6,650 km long." },
+                    { q: "The Great Wall is located in which country?", options: ["India", "China", "Mongolia", "Korea"], correct: 1, info: "The Great Wall is in China." },
+                    { q: "Which is the smallest country in the world?", options: ["Monaco", "Maldives", "Vatican City", "Singapore"], correct: 2, info: "Vatican City is the smallest independent city-state." },
+                    { q: "In which city is the Eiffel Tower located?", options: ["London", "Paris", "New York", "Rome"], correct: 1, info: "Eiffel Tower is located in Paris, France." },
+                    { q: "In which country did the game of Chess originate?", options: ["China", "India", "Iran", "Egypt"], correct: 1, info: "Chess originated in ancient India as Chaturanga." },
+                    { q: "What is the largest desert in the world?", options: ["Sahara Desert", "Gobi Desert", "Thar Desert", "Antarctic Desert"], correct: 3, info: "Antarctica is technically the largest desert on Earth (polar desert)." },
+                    { q: "What does WWW stand for in computers?", options: ["World Wide Web", "World Wide Work", "World Wide Windows", "Wide World Web"], correct: 0, info: "WWW stands for World Wide Web, created by Tim Berners-Lee." },
+                    { q: "Where is the headquarters of the UN located?", options: ["Geneva", "New York", "London", "Paris"], correct: 1, info: "UN Headquarters is located in New York City, USA." },
+                    { q: "Who was the first Muslim to win a Nobel Prize?", options: ["Dr. Abdus Salam", "Anwar Sadat", "Yasser Arafat", "Ahmed Zewail"], correct: 1, info: "Anwar Sadat of Egypt won the Nobel Peace Prize in 1978." },
+                    { q: "👑 Golden Prince Final: Which is the world's largest island?", options: ["Greenland", "Madagascar", "Borneo", "Sumatra"], correct: 0, info: "Greenland is the largest island in the world." }
+                ],
+                hi: [
+                    { q: "विश्व का सबसे बड़ा महासागर कौन सा है?", options: ["हिंद महासागर", "प्रशांत महासागर", "अटलांटिक महासागर", "आर्कटिक महासागर"], correct: 1, info: "प्रशांत महासागर सबसे बड़ा महासागर है।" },
+                    { q: "पाकिस्तान का राष्ट्रीय खेल कौन सा है?", options: ["क्रिकेट", "फुटबॉल", "हॉकी", "स्क्वाश"], correct: 2, info: "फील्ड हॉकी राष्ट्रीय खेल है।" },
+                    { q: "विश्व का सबसे ऊंचा पर्वत कौन सा है?", options: ["के2", "माउंट एवरेस्ट", "नंगा पर्वत", "कंचनजंगा"], correct: 1, info: "माउंट एवरेस्ट सबसे ऊंचा पर्वत है।" },
+                    { q: "जापान की राजधानी क्या है?", options: ["बीजिंग", "सोल", "टोकियो", "बैंकॉक"], correct: 2, info: "टोकियो जापान की राजधानी है।" },
+                    { q: "क्षेत्रफल के हिसाब से दुनिया का सबसे बड़ा देश कौन सा है?", options: ["चीन", "अमेरिका", "रूस", "कनाडा"], correct: 2, info: "रूस क्षेत्रफल में सबसे बड़ा है।" },
+                    { q: "दुनिया की सबसे लंबी नदी कौन सी है?", options: ["सिंधु", "अमेज़न", "नाइल (नील)", "यांग्त्ज़ी"], correct: 2, info: "नील नदी सबसे लंबी है।" },
+                    { q: "ग्रेट वॉल (महान दीवार) किस देश में स्थित है?", options: ["भारत", "चीन", "मंगोलिया", "कोरिया"], correct: 1, info: "यह दीवार चीन में है।" },
+                    { q: "दुनिया का सबसे छोटा देश कौन सा है?", options: ["मोनाको", "मालदीव", "वेटिकन सिटी", "सिंगापुर"], correct: 2, info: "वेटिकन सिटी सबसे छोटा देश है।" },
+                    { q: "एफिल टॉवर किस शहर में स्थित है?", options: ["लंदन", "पेरिस", "न्यूयॉर्क", "रोम"], correct: 1, info: "एफिल टॉवर पेरिस में है।" },
+                    { q: "शतरंज का खेल किस देश में शुरू हुआ था?", options: ["चीन", "भारत", "ईरान", "मिस्र"], correct: 1, info: "शतरंज का आविष्कार प्राचीन भारत में हुआ था।" },
+                    { q: "विश्व का सबसे बड़ा मरुस्थल (Desert) कौन सा है?", options: ["सहारा", "गोबी", "थार", "अंटार्कटिक"], correct: 3, info: "अंटार्कटिका दुनिया का सबसे बड़ा ध्रुवीय मरुस्थल है।" },
+                    { q: "कंप्यूटर में WWW का फुल फॉर्म क्या है?", options: ["World Wide Web", "World Wide Work", "World Wide Windows", "Wide World Web"], correct: 0, info: "WWW का अर्थ World Wide Web है।" },
+                    { q: "संयुक्त राष्ट्र (UN) का मुख्यालय कहाँ है?", options: ["जेनेवा", "न्यूयॉर्क", "लंदन", "पेरिस"], correct: 1, info: "यूएन का मुख्यालय न्यूयॉर्क में है।" },
+                    { q: "नोबेल पुरस्कार पाने वाले पहले मुस्लिम कौन थे?", options: ["डॉ. अब्दुस सलाम", "अनवर सादात", "यासिर अराफात", "अहमद ज़ेवैल"], correct: 1, info: "मिस्र के अनवर सादात को 1978 में नोबेल मिला।" },
+                    { q: "👑 गोल्डन प्रिंस फाइनल: विश्व का सबसे बड़ा द्वीप कौन सा है?", options: ["ग्रीनलैंड", "मेडागास्कर", "बोर्नियो", "सुमात्रा"], correct: 0, info: "ग्रीनलैंड सबसे बड़ा द्वीप है।" }
+                ],
+                ar: [
+                    { q: "ما هو أكبر المحيطات في العالم؟", options: ["المحيط الهندي", "المحيط الهادئ", "المحيط الأطلسي", "المحيط المتجمد الشمالي"], correct: 1, info: "المحيط الهادئ هو الأكبر والأعمق." },
+                    { q: "ما هي الرياضة الوطنية في باكستان؟", options: ["الكريكت", "كرة القدم", "الهوكي", "السكواش"], correct: 2, info: "هوكي الميدان هي الرياضة الوطنية." },
+                    { q: "ما هو أعلى جبل في العالم؟", options: ["K2", "جبل إيفرست", "نانكا بربت", "هملايا"], correct: 1, info: "جبل إيفرست يرتفع 8,848 متراً." },
+                    { q: "ما هي عاصمة اليابان؟", options: ["بكين", "سيول", "طوكيو", "بانكوك"], correct: 2, info: "طوكيو هي العاصمة." },
+                    { q: "ما هي أكبر دولة في العالم من حيث المساحة؟", options: ["الصين", "أمريكا", "روسيا", "كندا"], correct: 2, info: "روسيا هي الأكبر مساحة." },
+                    { q: "ما هو أطول نهر في العالم؟", options: ["السند", "الأمازون", "نهر النيل", "يانغتسي"], correct: 2, info: "نهر النيل هو الأطول (6,650 كم)." },
+                    { q: "أين يقع سور الصين العظيم؟", options: ["الهند", "الصين", "منغوليا", "كوريا"], correct: 1, info: "يقع في الصين." },
+                    { q: "ما هي أصغر دولة في العالم؟", options: ["موناكو", "جزر المالديف", "الفاتيكان", "سنغافورة"], correct: 2, info: "الفاتيكان هي أصغر دولة." },
+                    { q: "أين يقع برج إيفل؟", options: ["لندن", "باريس", "نيويورك", "روما"], correct: 1, info: "يقع في باريس، فرنسا." },
+                    { q: "أين نشأت لعبة الشطرنج؟", options: ["الصين", "الهند", "إيران", "مصر"], correct: 1, info: "نشأت لعبة الشطرنج في الهند القديمة." },
+                    { q: "ما هي أكبر صحراء في العالم؟", options: ["الصحراء الكبرى", "صحراء غوبي", "صحراء ثار", "صحراء أنتاركتيكا"], correct: 3, info: "صحراء أنتاركتيكا هي أكبر صحراء قطبية." },
+                    { q: "ماذا يعني اختصار WWW؟", options: ["World Wide Web", "World Wide Work", "World Wide Windows", "Wide World Web"], correct: 0, info: "تعني الشبكة العنكبوتية العالمية." },
+                    { q: "أين يقع مقر الأمم المتحدة الرئيسي؟", options: ["جنيف", "نيويورك", "لندن", "باريس"], correct: 1, info: "يقع المقر الرئيسي في نيويورك." },
+                    { q: "من هو أول شخص مسلم حصل على جائزة نوبل؟", options: ["د. عبد السلام", "أنور السادات", "ياسر عرفات", "أحمد زويل"], correct: 1, info: "أنور السادات حصل على نوبل للسلام عام 1978." },
+                    { q: "👑 نهائي الأمير الذهبي: ما هي أكبر جزيرة في العالم؟", options: ["جرينلاند", "مدغشقر", "بورنيو", "سومطرة"], correct: 0, info: "جرينلاند هي أكبر جزيرة في العالم." }
+                ]
+            },
+            science: {
+                ur: [
+                    { q: "پانی کا کیمیائی فارمولا کیا ہے؟", options: ["CO2", "H2O", "NaCl", "O2"], correct: 1, info: "پانی ہائیڈروجن اور آکسیجن کا مرکب (H2O) ہے۔" },
+                    { q: "زمین کی کششِ ثقل کا نظریہ کس نے پیش کیا؟", options: ["آئن سٹائن", "نیوٹن", "گیلیلیو", "ایڈیسن"], correct: 1, info: "سر آئزک نیوٹن نے کشش ثقل کا قانون دریافت کیا۔" },
+                    { q: "انسان کے جسم میں کتنی ہڈیاں ہوتی ہیں؟", options: ["106", "206", "306", "406"], correct: 1, info: "ایک بالغ انسان کے جسم میں 206 ہڈیاں ہوتی ہیں۔" },
+                    { q: "شمسی نظام کا سب سے بڑا سیارہ کون سا ہے؟", options: ["مریخ", "زمین", "مشتری (Jupiter)", "زحل"], correct: 2, info: "مشتری (Jupiter) تمام سیاروں میں سب سے بڑا ہے۔" },
+                    { q: "روشنی کی رفتار خلا میں کتنی ہوتی ہے؟", options: ["300,000 km/s", "150,000 km/s", "500,000 km/s", "100,000 km/s"], correct: 0, info: "روشنی خلا میں تقریباً 3 لاکھ کلومیٹر فی سیکنڈ کی رفتار سے سفر کرتی ہے۔" },
+                    { q: "پودے ضیائی تالیف (Photosynthesis) میں کون سی گیس جذب کرتے ہیں؟", options: ["آکسیجن", "کاربن ڈائی آکسائیڈ", "نائٹروجن", "ہائیڈروجن"], correct: 1, info: "پودے اپنی خوراک بنانے کے لیے کاربن ڈائی آکسائیڈ استعمال کرتے ہیں۔" },
+                    { q: "کمپیوٹر کا دماغ کسے کہا جاتا ہے؟", options: ["RAM", "Hard Disk", "CPU", "Monitor"], correct: 2, info: "CPU کا مطلب Central Processing Unit ہے جو کمپیوٹر کا دماغ ہے۔" },
+                    { q: "زمین کے ماحول میں سب سے زیادہ کون سی گیس موجود ہے؟", options: ["آکسیجن", "نائٹروجن", "کاربن ڈائی آکسائیڈ", "ہائیڈروجن"], correct: 1, info: "زمین کی فضا میں 78% نائٹروجن موجود ہے۔" },
+                    { q: "انسانی دل کے کتنے خانے (Chambers) ہوتے ہیں؟", options: ["2", "3", "4", "6"], correct: 2, info: "انسانی دل کے 4 خانے ہوتے ہیں۔" },
+                    { q: "سرخ خلیات (Red Blood Cells) کہاں بنتے ہیں؟", options: ["جگر", "دل", "ہڈیوں کے گودے (Bone Marrow)", "گردے"], correct: 2, info: "سرخ خلیات ہڈیوں کے گودے میں بنتے ہیں۔" },
+                    { q: "پنسلین (Penicillin) کس نے دریافت کی؟", options: ["الیکزینڈر فلیمنگ", "لوئس پاسچر", "رابرٹ کوچ", "ایڈورڈ جینر"], correct: 0, info: "سر الیکزینڈر فلیمنگ نے 1928 میں پنسلین دریافت کی تھی۔" },
+                    { q: "زمین پر سب سے سخت قدرتی مادّہ کون سا ہے؟", options: ["سونا", "لوہا", "ہیرا (Diamond)", "پلاٹینم"], correct: 2, info: "ہیرا قدرتی طور پر پایا جانے والا سب سے سخت مادہ ہے۔" },
+                    { q: "کون سا سیارہ 'سرخ سیارہ' (Red Planet) کہلاتا ہے؟", options: ["عطارد", "مریخ (Mars)", "زحل", "نیپچون"], correct: 1, info: "مریخ پر ائرن آکسائیڈ کی وجہ سے یہ سرخ دکھائی دیتا ہے۔" },
+                    { q: "صوتی لہروں (Sound Waves) کی رفتار کس میں سب سے تیز ہوتی ہے؟", options: ["ہوا", "پانی", "جامد (Solid)", "خلا"], correct: 2, info: "آواز جامد اشیاء (Solids) میں سب سے تیز سفر کرتی ہے۔" },
+                    { q: "👑 گولڈن پرنس فائنل: سورج پر کون سی گیس سب سے زیادہ مقدار میں موجود ہے؟", options: ["ہائیڈروجن", "ہیلیم", "آکسیجن", "نائٹروجن"], correct: 0, info: "سورج پر تقریباً 73% ہائیڈروجن اور 25% ہیلیم موجود ہے۔" }
+                ],
+                en: [
+                    { q: "What is the chemical formula of water?", options: ["CO2", "H2O", "NaCl", "O2"], correct: 1, info: "H2O stands for Hydrogen and Oxygen." },
+                    { q: "Who proposed the law of universal gravitation?", options: ["Einstein", "Newton", "Galileo", "Edison"], correct: 1, info: "Sir Isaac Newton formulated the law of gravity." },
+                    { q: "How many bones are in the adult human body?", options: ["106", "206", "306", "406"], correct: 1, info: "An adult human has 206 bones." },
+                    { q: "Which is the largest planet in our solar system?", options: ["Mars", "Earth", "Jupiter", "Saturn"], correct: 2, info: "Jupiter is the largest gas giant planet." },
+                    { q: "What is the speed of light in vacuum?", options: ["300,000 km/s", "150,000 km/s", "500,000 km/s", "100,000 km/s"], correct: 0, info: "Light travels at approx 300,000 km per second." },
+                    { q: "Which gas do plants absorb during photosynthesis?", options: ["Oxygen", "Carbon Dioxide", "Nitrogen", "Hydrogen"], correct: 1, info: "Plants absorb Carbon Dioxide to make food." },
+                    { q: "What is considered the brain of a computer?", options: ["RAM", "Hard Disk", "CPU", "Monitor"], correct: 2, info: "CPU stands for Central Processing Unit." },
+                    { q: "Which gas is most abundant in Earth's atmosphere?", options: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], correct: 1, info: "Nitrogen makes up ~78% of Earth's atmosphere." },
+                    { q: "How many chambers are in the human heart?", options: ["2", "3", "4", "6"], correct: 2, info: "The human heart consists of 4 chambers." },
+                    { q: "Where are Red Blood Cells produced?", options: ["Liver", "Heart", "Bone Marrow", "Kidney"], correct: 2, info: "Red blood cells are made in the bone marrow." },
+                    { q: "Who discovered Penicillin?", options: ["Alexander Fleming", "Louis Pasteur", "Robert Koch", "Edward Jenner"], correct: 0, info: "Alexander Fleming discovered Penicillin in 1928." },
+                    { q: "What is the hardest natural substance on Earth?", options: ["Gold", "Iron", "Diamond", "Platinum"], correct: 2, info: "Diamond is the hardest natural element." },
+                    { q: "Which planet is known as the Red Planet?", options: ["Mercury", "Mars", "Saturn", "Neptune"], correct: 1, info: "Mars appears red due to iron oxide on its surface." },
+                    { q: "Sound waves travel fastest through which medium?", options: ["Air", "Water", "Solid", "Vacuum"], correct: 2, info: "Sound travels fastest in solids." },
+                    { q: "👑 Golden Prince Final: Which gas is most abundant on the Sun?", options: ["Hydrogen", "Helium", "Oxygen", "Nitrogen"], correct: 0, info: "Hydrogen makes up ~73% of the Sun's mass." }
+                ],
+                hi: [
+                    { q: "पानी का रासायनिक सूत्र क्या है?", options: ["CO2", "H2O", "NaCl", "O2"], correct: 1, info: "H2O पानी का सूत्र है।" },
+                    { q: "गुरुत्वाकर्षण का सिद्धांत किसने दिया?", options: ["आइंस्टीन", "न्यूटन", "गैलीलियो", "एडिसन"], correct: 1, info: "सर आइजैक न्यूटन ने सिद्धांत दिया।" },
+                    { q: "मानव शरीर में कुल कितनी हड्डियाँ होती हैं?", options: ["106", "206", "306", "406"], correct: 1, info: "वयस्क शरीर में 206 हड्डियाँ होती हैं।" },
+                    { q: "सौर मंडल का सबसे बड़ा ग्रह कौन सा है?", options: ["मंगल", "पृथ्वी", "बृहस्पति (Jupiter)", "शनि"], correct: 2, info: "बृहस्पति सबसे बड़ा ग्रह है।" },
+                    { q: "प्रकाश की गति लगभग कितनी होती है?", options: ["300,000 km/s", "150,000 km/s", "500,000 km/s", "100,000 km/s"], correct: 0, info: "प्रकाश की गति 300,000 किमी/सेकंड है।" },
+                    { q: "पौधे प्रकाश संश्लेषण के लिए कौन सी गैस अवशोषित करते हैं?", options: ["ऑक्सीजन", "कार्बन डाइऑक्साइड", "नाइट्रोजन", "हाइड्रोजन"], correct: 1, info: "पौधे कार्बन डाइऑक्साइड लेते हैं।" },
+                    { q: "कंप्यूटर का मस्तिष्क किसे कहा जाता है?", options: ["RAM", "Hard Disk", "CPU", "Monitor"], correct: 2, info: "CPU कंप्यूटर का मस्तिष्क है।" },
+                    { q: "पृथ्वी के वायुमंडल में सबसे प्रचुर मात्रा में कौन सी गैस है?", options: ["ऑक्सीजन", "नाइट्रोजन", "कार्बन डाइऑक्साइड", "हाइड्रोजन"], correct: 1, info: "नाइट्रोजन 78% है।" },
+                    { q: "मानव हृदय में कितने कक्ष होते हैं?", options: ["2", "3", "4", "6"], correct: 2, info: "मानव हृदय में 4 कक्ष होते हैं।" },
+                    { q: "लाल रक्त कोशिकाएं (RBC) कहाँ बनती हैं?", options: ["यकृत", "हृदय", "अस्थि मज्जा (Bone Marrow)", "गुर्दा"], correct: 2, info: "RBC अस्थि मज्जा में बनती हैं।" },
+                    { q: "पेनिसिलिन की खोज किसने की थी?", options: ["अलेक्जेंडर फ्लेमिंग", "लुई पाश्चर", "रॉबर्ट कोच", "एडवर्ड जेनर"], correct: 0, info: "अलेक्जेंडर फ्लेमिंग ने खोज की थी।" },
+                    { q: "पृथ्वी पर सबसे कठोर प्राकृतिक पदार्थ कौन सा है?", options: ["सोना", "लोहा", "हीरा", "प्लेटिनम"], correct: 2, info: "हीरा सबसे कठोर पदार्थ है।" },
+                    { q: "किस ग्रह को लाल ग्रह कहा जाता है?", options: ["बुध", "मंगल (Mars)", "शनि", "वरुण"], correct: 1, info: "मंगल ग्रह को लाल ग्रह कहा जाता है।" },
+                    { q: "ध्वनि तरंगें किसमें सबसे तेज़ गति से चलती हैं?", options: ["हवा", "पानी", "ठोस (Solid)", "निर्वात"], correct: 2, info: "ध्वनि ठोस पदार्थों में सबसे तेज़ चलती है।" },
+                    { q: "👑 गोल्डन प्रिंस फाइनल: सूर्य पर सबसे प्रचुर मात्रा में कौन सी गैस है?", options: ["हाइड्रोजन", "हीलिएम", "ऑक्सीजन", "नाइट्रोजन"], correct: 0, info: "सूर्य पर 73% हाइड्रोजन है।" }
+                ],
+                ar: [
+                    { q: "ما هي الصيغة الكيميائية للماء؟", options: ["CO2", "H2O", "NaCl", "O2"], correct: 1, info: "H2O هي الصيغة الكيميائية للماء." },
+                    { q: "من اكتشف قانون الجاذبية الأرضية؟", options: ["أينشتاين", "نيوتن", "جاليليو", "أديسون"], correct: 1, info: "إسحاق نيوتن اكتشف الجاذبية." },
+                    { q: "كم عدد العظام في جسم الإنسان البالغ؟", options: ["106", "206", "306", "406"], correct: 1, info: "يتكون جسم البالغ من 206 عظماً." },
+                    { q: "ما هو أكبر كوكب في المجموعة الشمسية؟", options: ["المريخ", "الأرض", "المشتري", "زحل"], correct: 2, info: "المشتري هو أكبر كوكب." },
+                    { q: "ما هي سرعة الضوء تقريباً؟", options: ["300,000 كم/ثانية", "150,000 كم/ثانية", "500,000 كم/ثانية", "100,000 كم/ثانية"], correct: 0, info: "سرعة الضوء 300,000 كم/ثانية." },
+                    { q: "ما هو الغاز الذي تمتصه النباتات في البناء الضوئي؟", options: ["الأكسجين", "ثاني أكسيد الكربون", "النيتروجين", "الهيدروجين"], correct: 1, info: "تمتص النباتات ثاني أكسيد الكربون." },
+                    { q: "ما هو عقل الحاسوب؟", options: ["RAM", "القرص الصلب", "CPU", "الشاشة"], correct: 2, info: "CPU هو وحدة المعالجة المركزية." },
+                    { q: "ما هو الغاز الأكثر وفرة في الغلاف الجوي للأرض؟", options: ["الأكسجين", "النيتروجين", "ثاني أكسيد الكربون", "الهيدروجين"], correct: 1, info: "يشكل النيتروجين نحو 78%." },
+                    { q: "كم عدد حجرات قلب الإنسان؟", options: ["2", "3", "4", "6"], correct: 2, info: "يتكون قلب الإنسان من 4 حجرات." },
+                    { q: "أين تنتج خلايا الدم الحمراء؟", options: ["الكبد", "القلب", "نخاع العظم (Bone Marrow)", "الكلية"], correct: 2, info: "تنتج في نخاع العظام." },
+                    { q: "من اكتشف البنسلين؟", options: ["ألكسندر فلمنج", "لويس باستور", "روبرت كوخ", "إدوارد جينر"], correct: 0, info: "اكتشفه ألكسندر فلمنج عام 1928." },
+                    { q: "ما هي أقسى مادة طبيعية على وجه الأرض؟", options: ["الذهب", "الحديد", "الألماس", "البلاتين"], correct: 2, info: "الألماس هو المادة الأكثر صلابة." },
+                    { q: "أي كوكب يسمى الكوكب الأحمر؟", options: ["عطارد", "المريخ", "زحل", "نبتون"], correct: 1, info: "يسمى المريخ بالكوكب الأحمر." },
+                    { q: "أين تنتقل الموجات الصوتية بسرعة أكبر؟", options: ["الهواء", "الماء", "الأجسام الصلبة", "الفراغ"], correct: 2, info: "تنتقل الصوت أسرع في المواد الصلبة." },
+                    { q: "👑 نهائي الأمير الذهبي: ما هو الغاز الأكثر وفرة في الشمس؟", options: ["الهيدروجين", "الهيليوم", "الأكسجين", "النيتروجين"], correct: 0, info: "الهيدروجين يشكل نحو 73% من الشمس." }
+                ]
+            },
+            history: {
+                ur: [
+                    { q: "قدیم مصر کے بادشاہوں کو کیا کہا جاتا تھا؟", options: ["قیصر", "فرعون (Pharaoh)", "سلطان", "کسریٰ"], correct: 1, info: "قدیم مصر کے حکمرانوں کو فرعون کہا جاتا تھا۔" },
+                    { q: "سقوطِ بغداد کا واقعہ کس سال پیش آیا؟", options: ["1258ء", "1187ء", "1453ء", "1096ء"], correct: 0, info: "ہلاکو خان نے 1258ء میں بغداد کو تباہ کیا تھا۔" },
+                    { q: "سلطنتِ عثمانیہ کا بانی کون تھا؟", options: ["سلطان سلیمان", "عثمان اول", "ارطغرل غازی", "محمد فاتح"], correct: 1, info: "عثمان اول نے 1299ء میں سلطنت عثمانیہ کی بنیاد رکھی۔" },
+                    { q: "قسطنطنیہ (استنبول) کو کس مسلمان فاتح نے فتح کیا؟", options: ["صلاح الدین ایوبی", "سلطان محمد فاتح", "طارق بن زیاد", "عقبہ بن نافع"], correct: 1, info: "سلطان محمد فاتح نے 1453ء میں قسطنطنیہ فتح کیا۔" },
+                    { q: "دوسری جنگِ عظیم کس سال ختم ہوئی؟", options: ["1918", "1939", "1945", "1950"], correct: 2, info: "دوسری جنگ عظیم 1945ء میں ختم ہوئی۔" },
+                    { q: "مغل سلطنت کا بانی کون تھا؟", options: ["اکبر", "بابر", "ہمایوں", "شاہجہان"], correct: 1, info: "ظہیر الدین بابر نے 1526ء میں پانی پت کی پہلی جنگ جیت کر مغل سلطنت قائم کی۔" },
+                    { q: "جنگِ یرموک کس خلیفہ کے دور میں لڑی گئی؟", options: ["حضرت ابو بکر (رض)", "حضرت عمر (رض)", "حضرت عثمان (رض)", "حضرت علی (رض)"], correct: 1, info: "جنگ یرموک 15 ہجری میں حضرت عمر فاروق (رض) کے عہد میں لڑی گئی۔" },
+                    { q: "امریکہ کو کس نے دریافت کیا؟", options: ["واسکو ڈی گاما", "کرسٹوفر کولمبس", "مارکو پولو", "مژیلن"], correct: 1, info: "کرسٹوفر کولمبس نے 1492ء میں امریکہ کا بحری راستہ دریافت کیا۔" },
+                    { q: "تاج محل کس مغل بادشاہ نے بنوایا تھا؟", options: ["بابر", "اکبر", "شاہجہان", "اورنگزیب"], correct: 2, info: "شاہجہان نے اپنی ملکہ ممتاز محل کی یاد میں تاج محل بنوایا۔" },
+                    { q: "قدیم ترین تہذیب 'وادیِ سندھ کی تہذیب' کا اہم شہر کون سا تھا؟", options: ["ہڑپہ", "بابل", "نینوا", "مصر"], correct: 0, info: "ہڑپہ اور موہنجوداڑو وادی سندھ کے تاریخی مراکزی شہر تھے۔" },
+                    { q: "فرانسیسی انقلاب (French Revolution) کس سال شروع ہوا؟", options: ["1789", "1805", "1750", "1812"], correct: 0, info: "فرانسیسی انقلاب 1789ء میں شروع ہوا تھا۔" },
+                    { q: "صلاح الدین ایوبی نے بیت المقدس کو کس جنگ کے بعد آزاد کرایا؟", options: ["جنگِ حطین", "جنگِ یرموک", "جنگِ قادسیہ", "جنگِ عین جالوت"], correct: 0, info: "1187ء میں جنگ حطین کی فتح کے بعد بیت المقدس آزاد ہوا۔" },
+                    { q: "پہلی جنگِ عظیم کا آغاز کس سال ہوا؟", options: ["1912", "1914", "1918", "1939"], correct: 1, info: "پہلی جنگ عظیم 1914ء میں شروع ہوئی اور 1918ء تک جاری رہی۔" },
+                    { q: "دیوارِ برلن کس سال گرائی گئی؟", options: ["1989", "1991", "1975", "1980"], correct: 0, info: "دیوار برلن کو نومبر 1989ء میں گرایا گیا جو سرد جنگ کے خاتمے کی علامت بنا۔" },
+                    { q: "👑 گولڈن پرنس فائنل: اندلس (اسپین) پر مسلمانوں نے کتنے سال حکومت کی؟", options: ["500 سال", "700 سال سے زائد", "300 سال", "1000 سال"], correct: 1, info: "مسلمانوں نے اسپین (اندلس) پر تقریباً 800 سال (711ء سے 1492ء) حکومت کی؟" }
+                ],
+                en: [
+                    { q: "What were the ancient kings of Egypt called?", options: ["Caesar", "Pharaoh", "Sultan", "Khosrow"], correct: 1, info: "Rulers of Ancient Egypt were titled Pharaohs." },
+                    { q: "In which year did the Fall of Baghdad occur?", options: ["1258 AD", "1187 AD", "1453 AD", "1096 AD"], correct: 0, info: "Hulagu Khan destroyed Baghdad in 1258 AD." },
+                    { q: "Who was the founder of the Ottoman Empire?", options: ["Suleiman", "Osman I", "Ertugrul", "Mehmed II"], correct: 1, info: "Osman I founded the Ottoman Empire in 1299." },
+                    { q: "Which commander conquered Constantinople (Istanbul)?", options: ["Saladin", "Sultan Mehmed II", "Tariq ibn Ziyad", "Uqba ibn Nafi"], correct: 1, info: "Sultan Mehmed the Conqueror captured it in 1453." },
+                    { q: "In which year did World War II end?", options: ["1918", "1939", "1945", "1950"], correct: 2, info: "World War II ended in 1945." },
+                    { q: "Who was the founder of the Mughal Empire?", options: ["Akbar", "Babur", "Humayun", "Shah Jahan"], correct: 1, info: "Zahir-ud-din Babur established it in 1526." },
+                    { q: "During whose Caliphate was the Battle of Yarmouk fought?", options: ["Hazrat Abu Bakr (RA)", "Hazrat Umar (RA)", "Hazrat Usman (RA)", "Hazrat Ali (RA)"], correct: 1, info: "Fought under Caliph Umar (RA) in 636 AD." },
+                    { q: "Who discovered the sea route to America in 1492?", options: ["Vasco da Gama", "Christopher Columbus", "Marco Polo", "Magellan"], correct: 1, info: "Christopher Columbus reached America in 1492." },
+                    { q: "Which Mughal Emperor built the Taj Mahal?", options: ["Babur", "Akbar", "Shah Jahan", "Aurangzeb"], correct: 2, info: "Built by Shah Jahan in memory of Mumtaz Mahal." },
+                    { q: "Which was a major city of the Indus Valley Civilization?", options: ["Harappa", "Babylon", "Nineveh", "Memphis"], correct: 0, info: "Harappa was a major center of Indus Valley." },
+                    { q: "In which year did the French Revolution start?", options: ["1789", "1805", "1750", "1812"], correct: 0, info: "The French Revolution began in 1789." },
+                    { q: "After which battle did Saladin liberate Jerusalem?", options: ["Battle of Hattin", "Battle of Yarmouk", "Battle of Qadisiyyah", "Battle of Ain Jalut"], correct: 0, info: "Jerusalem was liberated after the Battle of Hattin in 1187." },
+                    { q: "When did World War I begin?", options: ["1912", "1914", "1918", "1939"], correct: 1, info: "World War I started in July 1914." },
+                    { q: "In which year was the Berlin Wall taken down?", options: ["1989", "1991", "1975", "1980"], correct: 0, info: "The Berlin Wall fell in November 1989." },
+                    { q: "👑 Golden Prince Final: For how long did Muslims rule Islamic Spain (Al-Andalus)?", options: ["500 Years", "Over 700 Years", "300 Years", "1000 Years"], correct: 1, info: "Muslim rule lasted nearly 800 years (711 to 1492 AD)." }
+                ],
+                hi: [
+                    { q: "प्राचीन मिस्र के राजाओं को क्या कहा जाता था?", options: ["सीज़र", "फ़िरौन (Pharaoh)", "सुल्तान", "किसरा"], correct: 1, info: "मिस्र के राजाओं को फ़िरौन कहा जाता था।" },
+                    { q: "बगदाद का पतन किस वर्ष हुआ था?", options: ["1258 ईस्वी", "1187 ईस्वी", "1453 ईस्वी", "1096 ईस्वी"], correct: 0, info: "हुलागू खान ने 1258 में बगदाद को तबाह किया था।" },
+                    { q: "उस्मानी साम्राज्य (Ottoman Empire) का संस्थापक कौन था?", options: ["सुलेमान", "उस्मान प्रथम", "अर्तुग्रुल", "महमुद द्वितीय"], correct: 1, info: "उस्मान प्रथम ने 1299 में स्थापना की थी।" },
+                    { q: "कुस्तुंतुनिया (इस्तांबुल) को किस विजेता ने जीता था?", options: ["सलाहुद्दीन अय्यूबी", "सुल्तान मोहम्मद फ़ातिह", "तारीक़ बिन ज़ियाद", "उक़बा बिन नाफ़े"], correct: 1, info: "सुल्तान मोहम्मद फ़ातिह ने 1453 में जीता था।" },
+                    { q: "द्वितीय विश्व युद्ध किस वर्ष समाप्त हुआ?", options: ["1918", "1939", "1945", "1950"], correct: 2, info: "द्वितीय विश्व युद्ध 1945 में समाप्त हुआ।" },
+                    { q: "मुग़ल साम्राज्य का संस्थापक कौन था?", options: ["अकबर", "बाबर", "हुमायूँ", "शाहजहाँ"], correct: 1, info: "बाबर ने 1526 में मुग़ल साम्राज्य की नींव रखी।" },
+                    { q: "यरमूक की लड़ाई किस ख़लीफ़ा के काल में हुई थी?", options: ["हज़रत अबू बक्र (रजि.)", "हज़रत उमर (रजि.)", "हज़रत उस्मान (रजि.)", "हज़रत अली (रजि.)"], correct: 1, info: "यह लड़ाई हज़रत उमर के समय 636 ईस्वी में हुई।" },
+                    { q: "1492 में अमेरिका का समुद्री मार्ग किसने खोजा?", options: ["वास्को द गामा", "क्रिस्टोफर कोलंबस", "मार्को पोलो", "मैगलन"], correct: 1, info: "कोलंबस ने 1492 में अमेरिका की खोज की।" },
+                    { q: "ताजमहल किस मुग़ल सम्राट ने बनवाया था?", options: ["बाबर", "अकबर", "शाहजहाँ", "औरंगज़ेब"], correct: 2, info: "शाहजहाँ ने ताजमहल बनवाया था।" },
+                    { q: "सिंधु घाटी सभ्यता का प्रमुख नगर कौन सा था?", options: ["हड़प्पा", "बेबीलोन", "निनवे", "मेम्फिस"], correct: 0, info: "हड़प्पा एक प्रमुख नगर था।" },
+                    { q: "फ्रांसीसी क्रांति (French Revolution) किस वर्ष शुरू हुई?", options: ["1789", "1805", "1750", "1812"], correct: 0, info: "क्रांति 1789 में शुरू हुई थी।" },
+                    { q: "सलाहुद्दीन अय्यूबी ने यरूशलम को किस युद्ध के बाद मुक्त कराया?", options: ["हत्तीन का युद्ध", "यरमूक का युद्ध", "कादिसिया का युद्ध", "ऐन जालूत का युद्ध"], correct: 0, info: "1187 में हत्तीन के युद्ध के बाद।" },
+                    { q: "प्रथम विश्व युद्ध कब शुरू हुआ था?", options: ["1912", "1914", "1918", "1939"], correct: 1, info: "प्रथम विश्व युद्ध 1914 में शुरू हुआ।" },
+                    { q: "बर्लिन की दीवार किस वर्ष गिराई गई थी?", options: ["1989", "1991", "1975", "1980"], correct: 0, info: "बर्लिन की दीवार 1989 में गिराई गई।" },
+                    { q: "👑 गोल्डन प्रिंस फाइनल: मुसलमानों ने स्पेन (अंदलूस) पर कितने वर्षों तक शासन किया?", options: ["500 वर्ष", "700 से अधिक वर्ष", "300 वर्ष", "1000 वर्ष"], correct: 1, info: "मुसलमानों ने लगभग 800 वर्षों तक शासन किया।" }
+                ],
+                ar: [
+                    { q: "ماذا كان يطلق على حكام مصر القديمة؟", options: ["قيصر", "فرعون", "سلطان", "كسرى"], correct: 1, info: "كان يطلق على ملوك مصر القدماء ألقاب الفراعنة." },
+                    { q: "في أي سنة وقع سقوط بغداد على يد المغول؟", options: ["1258 م", "1187 م", "1453 م", "1096 م"], correct: 0, info: "دمر هولاكو بغداد عام 1258 م." },
+                    { q: "من هو مؤسس الدولة العثمانية؟", options: ["سليمان القانوني", "عثمان الأول", "أرطغرل", "محمد الفاتح"], correct: 1, info: "أسسها عثمان بن أرطغرل عام 1299 م." },
+                    { q: "من هو القائد الذي فتح القسطنطينية (إسطنبول)؟", options: ["صلاح الدين الأيوبي", "السلطان محمد الفاتح", "طارق بن زياد", "عقبة بن نافع"], correct: 1, info: "فتحها السلطان محمد الفاتح عام 1453 م." },
+                    { q: "في أي عام انتهت الحرب العالمية الثانية؟", options: ["1918", "1939", "1945", "1950"], correct: 2, info: "انتهت الحرب العالمية الثانية في عام 1945." },
+                    { q: "من هو مؤسس الإمبراطورية المغولية في الهند؟", options: ["أكبر", "بابُر", "هميون", "شاه جيهان"], correct: 1, info: "أسسها ظهير الدين بابر عام 1526 م." },
+                    { q: "في عهد أي خليفة وقعت معركة اليرموك؟", options: ["أبو بكر الصديق", "عمر بن الخطاب", "عثمان بن عفان", "علي بن أبي طالب"], correct: 1, info: "وقعت المعركة في عهد الخليفة عمر بن الخطاب." },
+                    { q: "من اكتشف الطريق البحري إلى أمريكا عام 1492؟", options: ["فاسكو دا جاما", "كريستوفر كولومبوس", "ماركو بولو", "ماجلان"], correct: 1, info: "وصل كولومبوس إلى أمريكا عام 1492." },
+                    { q: "من هو الإمبراطور الذي بنى تاج محل؟", options: ["بابر", "أكبر", "شاه جيهان", "أورنكزيب"], correct: 2, info: "بناه شاه جيهان تخليداً لذكرى زوجته." },
+                    { q: "ما هي المدينة الرئيسية في حضارة وادي السند القديمة؟", options: ["هارابا", "بابل", "نينوى", "ممفيس"], correct: 0, info: "كانت هارابا من أهم مراكز حضارة السند." },
+                    { q: "في أي عام اندلعت الثورة الفرنسية؟", options: ["1789", "1805", "1750", "1812"], correct: 0, info: "اندلعت الثورة الفرنسية عام 1789." },
+                    { q: "بعد أي معركة حرر صلاح الدين القدس؟", options: ["معركة حطين", "معركة اليرموك", "معركة القادسية", "معركة عين جالوت"], correct: 0, info: "حرر القدس بعد معركة حطين عام 1187 م." },
+                    { q: "متى بدأت الحرب العالمية الأولى؟", options: ["1912", "1914", "1918", "1939"], correct: 1, info: "بدأت الحرب العالمية الأولى عام 1914." },
+                    { q: "في أي سنة تم هدم جدار برلين؟", options: ["1989", "1991", "1975", "1980"], correct: 0, info: "سقط جدار برلين في نوفمبر 1989." },
+                    { q: "👑 نهائي الأمير الذهبي: كم سنة استمر الحكم الإسلامي في الأندلس؟", options: ["500 سنة", "أكثر من 700 سنة", "300 سنة", "1000 سنة"], correct: 1, info: "استمر الحكم الإسلامي زهاء 800 عام (من 711 إلى 1492 م)." }
+                ]
+            }
         };
 
-        function ensure20Questions() {
-            for (let cat in quizData) {
-                let baseQuestions = quizData[cat];
-                while (baseQuestions.length < 20) {
-                    baseQuestions.push({
-                        q: {
-                            ur: `سوال نمبر ${baseQuestions.length + 1} (${cat} چیلنج)`,
-                            en: `Challenge Question Number ${baseQuestions.length + 1} (${cat})`,
-                            ar: `تحدي السؤال رقم ${baseQuestions.length + 1} (${cat})`,
-                            hi: `चुनौती प्रश्न संख्या ${baseQuestions.length + 1} (${cat})`
-                        },
-                        a: {
-                            ur: ["درست جواب (صحیح منتخب کریں)", "غلط آپشن الف", "غلط آپشن ب", "غلط آپشن ج"],
-                            en: ["Correct Option (Choose Me)", "Wrong Option A", "Wrong Option B", "Wrong Option C"],
-                            ar: ["الخيار الصحيح (اخترني)", "خيار خاطئ أ", "خيار خاطئ ب", "خيار خاطئ ج"],
-                            hi: ["सही विकल्प (मुझे चुनें)", "गलत विकल्प क", "गलत विकल्प ख", "गलत विकल्प ग"]
-                        },
-                        c: 0
-                    });
-                }
-            }
+        // Initialize Highscore display
+        document.getElementById('high-score').innerText = highScore;
+
+        // Background Particles Canvas
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
-        ensure20Questions();
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        let currentLang = 'en';
-        let selectedCategory = 'islamic';
-        let currentQuestionIndex = 0;
-        let winStreak = 0; 
-        let coins = 0;
-        let hasShield = false;
-        let isMuted = false;
-        
-        let audioCtx = null;
-        let heartbeatInterval = null;
-        let suspenseHumSource = null;
-
-        let timerInterval = null;
-        const totalTime = 60; 
-        let timeLeft = totalTime;
-        let autoNextTimeout = null;
-
-        let lifelines = { fifty: true, skip: true, double: true, poll: true };
-        let isDoubleChanceActive = false;
-        let doubleChanceUsedOnCurrent = false;
-
-        const pCanvas = document.getElementById("particle-canvas");
-        const pCtx = pCanvas.getContext("2d");
-        let uiParticles = [];
-
-        function resizeParticleCanvas() {
-            pCanvas.width = window.innerWidth;
-            pCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeParticleCanvas);
-        resizeParticleCanvas();
-
-        function initAudio() {
-            if (isMuted) return;
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            const muteBtn = document.getElementById("muteBtn");
-            const eq = document.getElementById("eq-viz");
-            if (isMuted) {
-                muteBtn.querySelector('span').innerText = "🔇 Sound: OFF";
-                eq.classList.remove("playing");
-                stopHeartbeatSound();
-                stopSuspenseHum();
-            } else {
-                muteBtn.querySelector('span').innerText = "🔊 Sound: ON";
-                eq.classList.add("playing");
-                if(document.getElementById("quiz-state").classList.contains("active")) {
-                    startHeartbeatSound();
-                    startSuspenseHum();
-                }
-            }
-        }
-
-        function triggerEqualizerPulse() {
-            if (isMuted) return;
-            const eq = document.getElementById("eq-viz");
-            eq.classList.add("playing");
-            setTimeout(() => {
-                if (isMuted) eq.classList.remove("playing");
-            }, 500);
-        }
-
-        function playClickSound() {
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            triggerEqualizerPulse();
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(1200, now);
-            osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
-            gain.gain.setValueAtTime(0.12, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now + 0.1);
-        }
-
-        /* NEW: 4-5 Seconds Ethereal Suspense Chime Melody for New Question */
-        function playNewQuestionChime() {
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            triggerEqualizerPulse();
-            let now = audioCtx.currentTime;
-            
-            // Suspense Melody Notes (Piano/Synth Style)
-            let notes = [220, 261.63, 329.63, 392, 440, 523.25, 659.25, 523.25, 440, 329.63, 261.63];
-            
-            notes.forEach((freq, index) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                
-                osc.type = (index % 2 === 0) ? 'sine' : 'triangle';
-                osc.frequency.setValueAtTime(freq, now + (index * 0.35));
-                
-                gain.gain.setValueAtTime(0, now + (index * 0.35));
-                gain.gain.linearRampToValueAtTime(0.15, now + (index * 0.35) + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.35) + 0.6);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(now + (index * 0.35));
-                osc.stop(now + (index * 0.35) + 0.65);
+        for(let i = 0; i < 65; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2.5 + 1,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4,
+                alpha: Math.random() * 0.7 + 0.2
             });
-        }
-
-        function playCoinSound() {
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(987.77, now);
-            osc.frequency.setValueAtTime(1318.51, now + 0.08);
-            gain.gain.setValueAtTime(0.2, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now + 0.3);
-        }
-
-        function playTikSound() {
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            triggerEqualizerPulse();
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            let stateFreq = (Math.round(timeLeft * 10) % 2 === 0) ? 1400 : 900;
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(stateFreq, now);
-            gain.gain.setValueAtTime(0.18, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now + 0.07);
-        }
-
-        function playCorrectSound() {
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            triggerEqualizerPulse();
-            let now = audioCtx.currentTime;
-            let notes = [523.25, 659.25, 783.99, 1046.50]; 
-            notes.forEach((freq, index) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(freq, now + (index * 0.05));
-                gain.gain.setValueAtTime(0, now + (index * 0.05));
-                gain.gain.linearRampToValueAtTime(0.18, now + (index * 0.05) + 0.02);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.05) + 0.3);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now + (index * 0.05)); osc.stop(now + (index * 0.05) + 0.45);
-            });
-        }
-
-        function playSadOverSound() {
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            triggerEqualizerPulse();
-            let now = audioCtx.currentTime;
-            let sadMelody = [392.00, 349.23, 311.13, 261.63, 196.00];
-            sadMelody.forEach((freq, index) => {
-                let osc = audioCtx.createOscillator();
-                let gain = audioCtx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(freq, now + (index * 0.15));
-                gain.gain.setValueAtTime(0.18, now + (index * 0.15));
-                gain.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.15) + 0.5);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(now + (index * 0.15)); osc.stop(now + (index * 0.15) + 0.6);
-            });
-        }
-
-        function playLifelineUseSound() {
-            if(isMuted) return; initAudio(); if (!audioCtx) return;
-            triggerEqualizerPulse();
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(300, now);
-            osc.frequency.exponentialRampToValueAtTime(1500, now + 0.25);
-            gain.gain.setValueAtTime(0.18, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now + 0.35);
-        }
-
-        function startSuspenseHum() {
-            stopSuspenseHum();
-            if(isMuted) return; initAudio(); if(!audioCtx) return;
-            let now = audioCtx.currentTime;
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(55, now);
-            
-            let filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(150, now);
-
-            gain.gain.setValueAtTime(0.08, now);
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(now);
-            suspenseHumSource = { osc, gain };
-        }
-
-        function stopSuspenseHum() {
-            if (suspenseHumSource) {
-                try { suspenseHumSource.osc.stop(); } catch(e){}
-                suspenseHumSource = null;
-            }
-        }
-
-        function startHeartbeatSound() {
-            stopHeartbeatSound();
-            if (isMuted) return;
-            initAudio();
-            if(!audioCtx) return;
-            heartbeatInterval = setInterval(() => {
-                let now = audioCtx.currentTime;
-                playBeat(now, 100);
-                playBeat(now + 0.25, 95);
-            }, 1000);
-        }
-
-        function playBeat(time, freq) {
-            let osc = audioCtx.createOscillator();
-            let gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, time);
-            osc.frequency.exponentialRampToValueAtTime(20, time + 0.15);
-            gain.gain.setValueAtTime(0.25, time);
-            gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(time); osc.stop(time + 0.2);
-        }
-
-        function stopHeartbeatSound() {
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-                heartbeatInterval = null;
-            }
-        }
-
-        function updateUITranslations() {
-            currentLang = document.getElementById("langSelect").value;
-            const translation = localizedUI[currentLang];
-
-            document.getElementById("startBtn").innerText = translation.start;
-            document.getElementById("categoryLabel").innerText = translation.categoryLabel;
-
-            const catSelect = document.getElementById("categorySelect");
-            const previousValue = catSelect.value || "islamic";
-            catSelect.innerHTML = "";
-            for (let key in translation.categories) {
-                const opt = document.createElement("option");
-                opt.value = key;
-                opt.innerText = translation.categories[key];
-                if (key === previousValue) opt.selected = true;
-                catSelect.appendChild(opt);
-            }
-            adjustInterfaceDirection();
-        }
-        updateUITranslations();
-
-        function createExplosion(x, y) {
-            const colors = ['#00f0ff', '#ff00ff', '#00ffaa', '#ffaa00', '#ffffff'];
-            for (let i = 0; i < 40; i++) {
-                uiParticles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 12,
-                    vy: (Math.random() - 0.5) * 12,
-                    size: Math.random() * 5 + 3,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    alpha: 1,
-                    decay: Math.random() * 0.02 + 0.01
-                });
-            }
         }
 
         function animateParticles() {
-            pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
-            uiParticles.forEach((p, index) => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.12;
-                p.alpha -= p.decay;
-                if (p.alpha <= 0) {
-                    uiParticles.splice(index, 1);
-                } else {
-                    pCtx.save();
-                    pCtx.globalAlpha = p.alpha;
-                    pCtx.fillStyle = p.color;
-                    pCtx.beginPath();
-                    pCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                    pCtx.fill();
-                    pCtx.restore();
-                }
+                if(p.x < 0) p.x = canvas.width;
+                if(p.x > canvas.width) p.x = 0;
+                if(p.y < 0) p.y = canvas.height;
+                if(p.y > canvas.height) p.y = 0;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 215, 0, ${p.alpha})`;
+                ctx.fill();
             });
             requestAnimationFrame(animateParticles);
         }
         animateParticles();
 
-        function adjustInterfaceDirection() {
-            const lang = document.getElementById("langSelect").value;
-            const questionElement = document.getElementById("question");
-            if (lang === 'ur' || lang === 'ar') {
-                questionElement.className = "question-box rtl";
-            } else {
-                questionElement.className = "question-box ltr";
+        // Confetti Canvas Engine
+        const cCanvas = document.getElementById('confetti-canvas');
+        const cCtx = cCanvas.getContext('2d');
+        let confettiPieces = [];
+
+        function resizeConfetti() {
+            cCanvas.width = window.innerWidth;
+            cCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeConfetti);
+        resizeConfetti();
+
+        function triggerConfetti() {
+            confettiPieces = [];
+            const colors = ['#ffd700', '#e62143', '#2ecc71', '#00f2fe', '#ffffff', '#f39c12'];
+            for(let i = 0; i < 180; i++) {
+                confettiPieces.push({
+                    x: cCanvas.width / 2,
+                    y: cCanvas.height / 2,
+                    w: Math.random() * 10 + 6,
+                    h: Math.random() * 10 + 6,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.5) * 16 - 6,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360,
+                    vRot: (Math.random() - 0.5) * 14,
+                    gravity: 0.18
+                });
+            }
+            animateConfetti();
+        }
+
+        function animateConfetti() {
+            if(confettiPieces.length === 0) return;
+            cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+            confettiPieces.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.rot += p.vRot;
+
+                cCtx.save();
+                cCtx.translate(p.x, p.y);
+                cCtx.rotate((p.rot * Math.PI) / 180);
+                cCtx.fillStyle = p.color;
+                cCtx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+                cCtx.restore();
+
+                if(p.y > cCanvas.height) confettiPieces.splice(idx, 1);
+            });
+            if(confettiPieces.length > 0) requestAnimationFrame(animateConfetti);
+        }
+
+        // Audio Effects Synthesizer
+        let audioCtx = null;
+        function playSound(type) {
+            if (!soundEnabled) return;
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); 
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.35);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(120, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.05);
+            } else if (type === 'tick') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(850, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.03);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.03);
+            } else if (type === 'cheer') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.6);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.7);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.7);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-status').innerText = soundEnabled ? uiTranslations[currentLang].soundOn : uiTranslations[currentLang].soundOff;
+        }
+
+        function changeLanguage() {
+            currentLang = document.getElementById('lang-select').value;
+            document.getElementById('txt-bag').innerText = uiTranslations[currentLang].moneyBag;
+            document.getElementById('txt-stage').innerText = uiTranslations[currentLang].stage;
+            document.getElementById('cat-title').innerText = uiTranslations[currentLang].catTitle;
+            document.getElementById('btn-restart').innerText = uiTranslations[currentLang].restartBtn;
+
+            document.documentElement.lang = currentLang;
+            document.body.style.direction = (currentLang === 'ur' || currentLang === 'ar') ? 'rtl' : 'ltr';
+
+            if (!document.getElementById('quiz-screen').classList.contains('hidden') && activeQuestions.length > 0) {
+                activeQuestions = quizDatabase[selectedCategory][currentLang].map(q => {
+                    const shuffledOpts = shuffleArray(q.options);
+                    const correctText = q.options[q.correct];
+                    const newCorrectIdx = shuffledOpts.indexOf(correctText);
+                    return { q: q.q, options: shuffledOpts, correct: newCorrectIdx, info: q.info };
+                });
+                loadStage();
             }
         }
 
         function shuffleArray(array) {
-            let shuffled = [...array];
-            for (let i = shuffled.length - 1; i > 0; i--) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                [arr[i], arr[j]] = [arr[j], arr[i]];
             }
-            return shuffled;
+            return arr;
         }
 
-        function startGame() {
-            playClickSound();
-            currentLang = document.getElementById("langSelect").value;
-            selectedCategory = document.getElementById("categorySelect").value;
-            
-            document.getElementById("welcome-state").classList.remove("active");
-            document.getElementById("quiz-state").classList.add("active");
-            
-            winStreak = 0;
-            currentQuestionIndex = 0;
-            
-            document.getElementById("correct-count").innerText = winStreak;
-            document.getElementById("coinCount").innerText = coins;
-            
-            if (!isMuted) document.getElementById("eq-viz").classList.add("playing");
-            
-            quizData[selectedCategory] = shuffleArray(quizData[selectedCategory]);
-            
-            updateXPBar();
-            updateMedalsUI();
+        function selectCategory(cat) {
+            playSound('click');
+            selectedCategory = cat;
+            currentStage = 1;
+            crowns = 0;
+            currentStreak = 0;
+            maxStreak = 0;
+            correctAnswersCount = 0;
+            totalQuestionsAnswered = 0;
 
-            lifelines = { fifty: true, skip: true, double: true, poll: true };
-            updateLifelinesUI();
-            loadQuestion();
+            resetLifelines();
+            
+            activeQuestions = quizDatabase[selectedCategory][currentLang].map(q => {
+                const shuffledOpts = shuffleArray(q.options);
+                const correctText = q.options[q.correct];
+                const newCorrectIdx = shuffledOpts.indexOf(correctText);
+                return { q: q.q, options: shuffledOpts, correct: newCorrectIdx, info: q.info };
+            });
+            
+            document.getElementById('total-stages-count').innerText = activeQuestions.length;
+            document.getElementById('category-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+
+            updateStats();
+            loadStage();
         }
 
-        function updateMedalsUI() {
-            const bronze = document.getElementById("medal-bronze");
-            const silver = document.getElementById("medal-silver");
-            const gold = document.getElementById("medal-gold");
-
-            bronze.classList.remove("unlocked");
-            silver.classList.remove("unlocked");
-            gold.classList.remove("unlocked");
-
-            if (winStreak >= 5) bronze.classList.add("unlocked");
-            if (winStreak >= 10) silver.classList.add("unlocked");
-            if (winStreak >= 20) gold.classList.add("unlocked");
+        function resetLifelines() {
+            usedLifelines = { '5050': false, 'poll': false, 'skip': false, 'time': false, 'double': false };
+            document.getElementById('life-5050').disabled = false;
+            document.getElementById('life-poll').disabled = false;
+            document.getElementById('life-skip').disabled = false;
+            document.getElementById('life-time').disabled = false;
+            document.getElementById('life-double').disabled = false;
         }
 
-        function updateLifelinesUI() {
-            document.getElementById("lifeline-fifty").disabled = !lifelines.fifty;
-            document.getElementById("lifeline-skip").disabled = !lifelines.skip;
-            document.getElementById("lifeline-double").disabled = !lifelines.double;
-            document.getElementById("lifeline-poll").disabled = !lifelines.poll;
+        function updateStats() {
+            document.getElementById('crown-count').innerText = crowns;
+            document.getElementById('current-stage').innerText = currentStage;
+            
+            if (crowns > highScore) {
+                highScore = crowns;
+                localStorage.setItem('gp_v1_high_score', highScore);
+                document.getElementById('high-score').innerText = highScore;
+            }
+
+            const streakBadge = document.getElementById('streak-badge');
+            if(currentStreak > 1) {
+                streakBadge.style.display = 'inline-block';
+                document.getElementById('streak-count').innerText = currentStreak;
+            } else {
+                streakBadge.style.display = 'none';
+            }
         }
 
-        function updateXPBar() {
-            const xpBar = document.getElementById("xpBar");
-            const xpText = document.getElementById("xpText");
-            
-            const percentage = (winStreak / 20) * 100;
-            xpBar.style.width = percentage + "%";
-            xpText.innerText = `${winStreak} / 20 consecutive wins`;
-            document.getElementById("streakDisplay").innerText = `🔥 STREAK: ${winStreak}/20`;
-        }
+        function loadStage() {
+            currentQIndex = currentStage - 1;
+            currentQuestionObj = activeQuestions[currentQIndex];
+            isDoubleCrownsActive = false;
 
-        function triggerDamageVisuals() {
-            const gameBox = document.getElementById("gameBox");
-            gameBox.classList.add("shake", "warning-border");
-            setTimeout(() => {
-                gameBox.classList.remove("shake");
-            }, 500);
-        }
+            document.getElementById('explanation-box').classList.add('hidden');
 
-        function showComboBanner(streakNum) {
-            const banner = document.getElementById("comboBanner");
-            banner.innerText = `${streakNum}x COMBO! 🔥`;
-            banner.classList.add("show");
-            setTimeout(() => {
-                banner.classList.remove("show");
-            }, 1200);
-        }
+            const royaleBanner = document.getElementById('royale-banner');
+            if (currentStage === 15) {
+                royaleBanner.classList.remove('hidden');
+            } else {
+                royaleBanner.classList.add('hidden');
+            }
 
-        function loadQuestion() {
-            if (autoNextTimeout) clearTimeout(autoNextTimeout);
-            document.getElementById("autoNextIndicator").style.display = "none";
-            document.getElementById("gameBox").classList.remove("warning-border");
-            isDoubleChanceActive = false;
-            doubleChanceUsedOnCurrent = false;
+            document.getElementById('question-text').innerText = `[Stage ${currentStage}] ${currentQuestionObj.q}`;
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
 
-            playNewQuestionChime(); 
-
-            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
-            const trans = localizedUI[currentLang];
-            
-            document.getElementById("score-container").innerHTML = `${trans.score}: <span id="correct-count">${winStreak}</span>/20`;
-            
-            let dynamicLvl = 1;
-            if (winStreak >= 15) dynamicLvl = 4;
-            else if (winStreak >= 10) dynamicLvl = 3;
-            else if (winStreak >= 5) dynamicLvl = 2;
-
-            document.getElementById("level-display").innerText = `${trans.level}: ${dynamicLvl} (${trans.qof} ${winStreak + 1}/20)`;
-            document.getElementById("question").innerText = currentQuestion.q[currentLang];
-            adjustInterfaceDirection();
-            
-            const optionsContainer = document.getElementById("options-container");
-            optionsContainer.innerHTML = "";
-            
-            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
-            const shuffledChoices = shuffleArray(currentQuestion.a[currentLang]);
-            
-            const optionLabels = ["A", "B", "C", "D"];
-            shuffledChoices.forEach((choice, index) => {
-                const button = document.createElement("button");
-                button.className = "option-btn";
-                
-                button.innerHTML = `
-                    <div style="display: flex; align-items: center; width: 85%;">
-                        <div class="option-badge">${optionLabels[index]}</div>
-                        <span class="choice-txt">${choice}</span>
-                    </div>
-                `;
-                
-                button.onclick = (e) => {
-                    checkAnswer(button, choice, correctText, e);
-                };
-                optionsContainer.appendChild(button);
+            currentQuestionObj.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = optText;
+                btn.onclick = () => checkAnswer(index);
+                optionsContainer.appendChild(btn);
             });
 
-            resetAndStartTimer();
-            startHeartbeatSound();
-            startSuspenseHum();
-            updateLifelinesUI();
-            updateMedalsUI();
-            updateXPBar();
+            // Dynamic Time Scaling
+            if (currentStage <= 4) maxTimeForStage = 30;
+            else if (currentStage <= 8) maxTimeForStage = 25;
+            else if (currentStage <= 12) maxTimeForStage = 20;
+            else maxTimeForStage = 15;
+
+            // Extra time given for Royale stage
+            if (currentStage === 15) maxTimeForStage = 25;
+
+            resetTimer();
         }
 
-        function resetAndStartTimer() {
+        function resetTimer() {
             clearInterval(timerInterval);
-            timeLeft = totalTime;
-            const timerBar = document.getElementById("timerBar");
-            const gameBox = document.getElementById("gameBox");
-            timerBar.style.width = "100%";
-            timerBar.style.background = "linear-gradient(90deg, #00ffaa, #00f0ff)";
+            timeLeft = maxTimeForStage;
+            isTimeFrozen = false;
+            document.getElementById('timer-count').innerText = timeLeft;
             
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.style.width = '100%';
+            timerBar.style.background = 'linear-gradient(90deg, var(--accent-gold), var(--accent-gold-glow))';
+
             timerInterval = setInterval(() => {
-                timeLeft -= 0.1;
-                let percentage = (timeLeft / totalTime) * 100;
-                timerBar.style.width = percentage + "%";
-                
-                if (timeLeft <= 10) {
-                    timerBar.style.background = "linear-gradient(90deg, #ff1744, #b71c1c)"; 
-                    gameBox.classList.add("warning-border");
-                    if (Math.abs(timeLeft - Math.round(timeLeft)) < 0.05) {
-                        playTikSound(); 
+                if (!isTimeFrozen) {
+                    timeLeft--;
+                    document.getElementById('timer-count').innerText = timeLeft;
+                    
+                    const pct = (timeLeft / maxTimeForStage) * 100;
+                    timerBar.style.width = `${pct}%`;
+
+                    if (timeLeft <= 5) {
+                        timerBar.style.background = 'var(--danger-red)';
+                        playSound('tick');
+                    }
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                        gameOver(uiTranslations[currentLang].timeUp);
                     }
                 }
-
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    handleTimeOut();
-                }
-            }, 100);
+            }, 1000);
         }
 
-        function handleTimeOut() {
-            stopHeartbeatSound();
-            stopSuspenseHum();
-            
-            if (hasShield) {
-                hasShield = false;
-                document.getElementById("shieldStatus").innerText = "Inactive";
-                document.getElementById("shieldStatus").style.color = "#ff3366";
-                alert("⏰ Time Out! Your Shield saved your streak!");
-            } else {
-                winStreak = 0; 
-            }
-            
-            updateMedalsUI();
-            playSadOverSound(); 
-            triggerDamageVisuals();
-            
-            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
-            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
-            const optionsContainer = document.getElementById("options-container");
-            const buttons = optionsContainer.getElementsByClassName("option-btn");
-
-            for (let btn of buttons) {
-                btn.disabled = true;
-                if (btn.innerText.includes(correctText)) {
-                    btn.classList.add("correct");
-                }
-            }
-            triggerAutoNext();
-        }
-
-        function useFiftyFifty() {
-            if (!lifelines.fifty) return;
-            playLifelineUseSound();
-            lifelines.fifty = false;
-            updateLifelinesUI();
-
-            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
-            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
-            const optionsContainer = document.getElementById("options-container");
-            const buttons = Array.from(optionsContainer.getElementsByClassName("option-btn"));
-
-            let wrongButtons = buttons.filter(btn => !btn.querySelector('.choice-txt').innerText.includes(correctText));
-            
-            wrongButtons = shuffleArray(wrongButtons);
-            wrongButtons.slice(0, 2).forEach(btn => {
-                btn.disabled = true;
-                btn.style.opacity = "0.15";
-            });
-        }
-
-        function useSkip() {
-            if (!lifelines.skip) return;
-            playLifelineUseSound();
-            lifelines.skip = false;
-            stopHeartbeatSound();
-            stopSuspenseHum();
+        function checkAnswer(selectedIndex) {
             clearInterval(timerInterval);
-            
-            currentQuestionIndex = (currentQuestionIndex + 1) % 20;
-            loadQuestion();
+            totalQuestionsAnswered++;
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach(btn => btn.disabled = true);
+
+            if (currentQuestionObj.info) {
+                document.getElementById('explanation-text').innerText = currentQuestionObj.info;
+                document.getElementById('explanation-box').classList.remove('hidden');
+            }
+
+            if (selectedIndex === currentQuestionObj.correct) {
+                playSound('correct');
+                optionBtns[selectedIndex].classList.add('correct');
+                
+                correctAnswersCount++;
+                currentStreak++;
+                if (currentStreak > maxStreak) maxStreak = currentStreak;
+
+                const multiplier = currentStreak > 1 ? currentStreak : 1;
+                let earnedCrowns = (100 * currentStage) * multiplier;
+
+                if (isDoubleCrownsActive) {
+                    earnedCrowns *= 2;
+                }
+
+                crowns += earnedCrowns;
+                updateStats();
+
+                setTimeout(() => {
+                    if (currentStage < activeQuestions.length) {
+                        currentStage++;
+                        updateStats();
+                        loadStage();
+                    } else {
+                        gameWin();
+                    }
+                }, 2200);
+            } else {
+                playSound('wrong');
+                currentStreak = 0;
+                updateStats();
+
+                optionBtns[selectedIndex].classList.add('wrong');
+                optionBtns[currentQuestionObj.correct].classList.add('correct');
+
+                setTimeout(() => {
+                    gameOver(uiTranslations[currentLang].wrongAns);
+                }, 2500);
+            }
         }
 
-        function useDoubleChance() {
-            if (!lifelines.double) return;
-            playLifelineUseSound();
-            lifelines.double = false;
-            isDoubleChanceActive = true;
-            updateLifelinesUI();
+        // Lifeline Actions
+        function use5050() {
+            if (usedLifelines['5050']) return;
+            playSound('click');
+            usedLifelines['5050'] = true;
+            document.getElementById('life-5050').disabled = true;
+
+            const optionBtns = document.querySelectorAll('.option-btn');
+            let removedCount = 0;
+            
+            for (let i = 0; i < optionBtns.length; i++) {
+                if (i !== currentQuestionObj.correct && removedCount < 2) {
+                    optionBtns[i].style.visibility = 'hidden';
+                    removedCount++;
+                }
+            }
         }
 
         function useAudiencePoll() {
-            if (!lifelines.poll) return;
-            playLifelineUseSound();
-            lifelines.poll = false;
-            updateLifelinesUI();
+            if (usedLifelines['poll']) return;
+            playSound('click');
+            usedLifelines['poll'] = true;
+            document.getElementById('life-poll').disabled = true;
 
-            const currentQuestion = quizData[selectedCategory][currentQuestionIndex];
-            const correctText = currentQuestion.a[currentLang][currentQuestion.c];
-            const optionsContainer = document.getElementById("options-container");
-            const buttons = Array.from(optionsContainer.getElementsByClassName("option-btn"));
+            const pollModal = document.getElementById('poll-modal');
+            const pollBody = document.getElementById('poll-results-body');
+            document.getElementById('poll-modal-title').innerText = `📊 ${uiTranslations[currentLang].pollTitle}`;
+            pollBody.innerHTML = '';
 
-            let correctPct = Math.floor(Math.random() * 20) + 55;
-            let remaining = 100 - correctPct;
+            let correctPct = Math.floor(Math.random() * 20) + 60; 
+            let remainingPct = 100 - correctPct;
+            
+            let p1 = Math.floor(Math.random() * remainingPct);
+            let p2 = Math.floor(Math.random() * (remainingPct - p1));
+            let p3 = remainingPct - p1 - p2;
+            let otherPct = [p1, p2, p3];
 
-            let distribution = [];
-            for (let i = 0; i < 3; i++) {
-                let share = Math.floor(Math.random() * (remaining - (3 - i - 1)));
-                distribution.push(share);
-                remaining -= share;
+            let percentages = [];
+            let otherIdx = 0;
+
+            for (let i = 0; i < 4; i++) {
+                if (i === currentQuestionObj.correct) {
+                    percentages.push(correctPct);
+                } else {
+                    percentages.push(otherPct[otherIdx++]);
+                }
             }
-            distribution.push(remaining);
-            distribution = shuffleArray(distribution);
 
-            let distIndex = 0;
-            buttons.forEach(btn => {
-                const textSpan = btn.querySelector('.choice-txt');
-                let isCorrect = textSpan.innerText === correctText;
-                let pct = isCorrect ? correctPct : distribution[distIndex++];
-                
-                const pollBar = document.createElement('div');
-                pollBar.className = 'poll-bar';
-                btn.appendChild(pollBar);
-                
-                const pctSpan = document.createElement('span');
-                pctSpan.className = 'poll-percentage';
-                pctSpan.innerText = `📊 ${pct}%`;
-                btn.appendChild(pctSpan);
-
-                setTimeout(() => {
-                    pollBar.style.width = `${pct}%`;
-                }, 100);
+            currentQuestionObj.options.forEach((opt, idx) => {
+                const container = document.createElement('div');
+                container.className = 'poll-bar-container';
+                container.innerHTML = `
+                    <div class="poll-bar-label"><strong>${opt}</strong>: ${percentages[idx]}%</div>
+                    <div class="poll-bar-bg">
+                        <div class="poll-bar-fill" id="pbar-${idx}"></div>
+                    </div>
+                `;
+                pollBody.appendChild(container);
             });
+
+            pollModal.classList.remove('hidden');
+
+            setTimeout(() => {
+                percentages.forEach((pct, idx) => {
+                    const el = document.getElementById(`pbar-${idx}`);
+                    if (el) el.style.width = `${pct}%`;
+                });
+            }, 100);
         }
 
-        function checkAnswer(selectedBtn, selectedText, correctText, event) {
+        function closePollModal() {
+            playSound('click');
+            document.getElementById('poll-modal').classList.add('hidden');
+        }
+
+        function useSkip() {
+            if (usedLifelines['skip']) return;
+            playSound('click');
+            usedLifelines['skip'] = true;
+            document.getElementById('life-skip').disabled = true;
+
             clearInterval(timerInterval);
-            const optionsContainer = document.getElementById("options-container");
-            const buttons = optionsContainer.getElementsByClassName("option-btn");
-
-            if (event) {
-                createExplosion(event.clientX, event.clientY);
-            }
-
-            if (selectedText === correctText) {
-                stopHeartbeatSound();
-                stopSuspenseHum();
-                winStreak++;
-                
-                // Add Coins on Correct Answer!
-                coins += 10;
-                document.getElementById("coinCount").innerText = coins;
-                playCoinSound();
-
-                // Trigger Combo Visuals
-                if (winStreak === 3 || winStreak === 5 || winStreak === 8 || winStreak === 12 || winStreak === 15) {
-                    showComboBanner(winStreak);
-                }
-
-                // Award Shield automatically every 5 streaks
-                if (winStreak % 5 === 0) {
-                    hasShield = true;
-                    document.getElementById("shieldStatus").innerText = "Active 🛡️";
-                    document.getElementById("shieldStatus").style.color = "#00ffaa";
-                }
-                
-                document.getElementById("correct-count").innerText = winStreak;
-                updateXPBar();
-                
-                selectedBtn.classList.add("correct");
-                playCorrectSound();
-
-                for (let btn of buttons) {
-                    btn.disabled = true;
-                }
-                updateMedalsUI();
-
-                if (winStreak >= 20) {
-                    showGrandFinale();
-                } else {
-                    triggerAutoNext();
-                }
+            if (currentStage < activeQuestions.length) {
+                currentStage++;
+                updateStats();
+                loadStage();
             } else {
-                if (isDoubleChanceActive && !doubleChanceUsedOnCurrent) {
-                    doubleChanceUsedOnCurrent = true;
-                    selectedBtn.classList.add("wrong");
-                    selectedBtn.disabled = true;
-                    playSadOverSound(); 
-                    triggerDamageVisuals();
-                    resetAndStartTimer(); 
-                    return; 
-                }
-
-                stopHeartbeatSound();
-                stopSuspenseHum();
-                
-                if (hasShield) {
-                    hasShield = false;
-                    document.getElementById("shieldStatus").innerText = "Inactive";
-                    document.getElementById("shieldStatus").style.color = "#ff3366";
-                    alert("🛡️ Shield used! Your streak was saved!");
-                } else {
-                    winStreak = 0; 
-                }
-                
-                updateMedalsUI();
-                triggerDamageVisuals();
-                
-                selectedBtn.classList.add("wrong");
-                playSadOverSound(); 
-
-                for (let btn of buttons) {
-                    btn.disabled = true;
-                    if (btn.querySelector('.choice-txt').innerText === correctText) {
-                        btn.classList.add("correct");
-                    }
-                }
-                triggerAutoNext();
+                gameWin();
             }
         }
 
-        function triggerAutoNext() {
-            const indicator = document.getElementById("autoNextIndicator");
-            indicator.style.display = "block";
-            let secLeft = 3;
-            indicator.innerText = `Next Question in ${secLeft}s...`;
+        function useTimeFreeze() {
+            if (usedLifelines['time']) return;
+            playSound('click');
+            usedLifelines['time'] = true;
+            document.getElementById('life-time').disabled = true;
 
-            let autoCountdown = setInterval(() => {
-                secLeft--;
-                if (secLeft > 0) {
-                    indicator.innerText = `Next Question in ${secLeft}s...`;
-                } else {
-                    clearInterval(autoCountdown);
-                }
-            }, 1000);
-
-            autoNextTimeout = setTimeout(() => {
-                currentQuestionIndex = (currentQuestionIndex + 1) % 20; 
-                loadQuestion();
-            }, 3000);
+            isTimeFrozen = true;
+            document.getElementById('timer-box').innerText = "⌛ FROZEN";
+            document.getElementById('timer-bar').style.background = 'var(--accent-gold)';
         }
 
-        function showGrandFinale() {
-            document.getElementById("quiz-state").classList.remove("active");
-            document.getElementById("winner-state").classList.add("active");
-            
-            const trans = localizedUI[currentLang];
-            document.getElementById("winner-heading").innerText = trans.winTitle;
-            document.getElementById("winner-sub").innerText = trans.winSub;
-            
-            const canvas = document.getElementById("fireworks");
-            canvas.style.display = "block";
-            runFireworksEngine();
+        function useDoubleCrowns() {
+            if (usedLifelines['double']) return;
+            playSound('click');
+            usedLifelines['double'] = true;
+            isDoubleCrownsActive = true;
+            document.getElementById('life-double').disabled = true;
+            document.getElementById('life-double').innerText = "✨ 2x ACTIVE";
+        }
+
+        function renderEndStats() {
+            document.getElementById('stat-max-streak').innerText = `${maxStreak}x`;
+            const accuracy = totalQuestionsAnswered > 0 
+                ? Math.round((correctAnswersCount / totalQuestionsAnswered) * 100) 
+                : 0;
+            document.getElementById('stat-accuracy').innerText = `${accuracy}%`;
+        }
+
+        function gameWin() {
+            playSound('cheer');
+            triggerConfetti();
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-title').innerText = "👑 GOLDEN PRINCE VICTORY!";
+            document.getElementById('result-desc').innerText = `${uiTranslations[currentLang].stageCleared}\nTotal Golden Crowns: ${crowns}`;
+            renderEndStats();
+        }
+
+        function gameOver(reason) {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-title').innerText = "❌ Game Over";
+            document.getElementById('result-desc').innerText = `${reason}\nTotal Golden Crowns: ${crowns}`;
+            renderEndStats();
         }
 
         function restartGame() {
-            playClickSound();
-            stopHeartbeatSound();
-            stopSuspenseHum();
-            clearInterval(timerInterval);
-            if(autoNextTimeout) clearTimeout(autoNextTimeout);
-            document.getElementById("winner-state").classList.remove("active");
-            document.getElementById("fireworks").style.display = "none";
-            document.getElementById("welcome-state").classList.add("active");
-            updateUITranslations();
-        }
-
-        /* Lucky Spin Wheel Functions */
-        function openSpinWheel() {
-            playClickSound();
-            document.getElementById("spinModal").style.display = "flex";
-        }
-
-        function doSpin() {
-            playClickSound();
-            let btn = document.getElementById("spinBtn");
-            btn.disabled = true;
-            document.getElementById("spinResultText").innerText = "Spinning...";
-            
-            setTimeout(() => {
-                let prizes = ["50 Coins 💰", "Protection Shield 🛡️", "20 Coins 💰", "100 Coins 💰"];
-                let won = prizes[Math.floor(Math.random() * prizes.length)];
-                
-                document.getElementById("spinResultText").innerText = `🎉 Congratulations! You won: ${won}`;
-                if (won.includes("Coins")) {
-                    let amount = parseInt(won);
-                    coins += amount;
-                    document.getElementById("coinCount").innerText = coins;
-                    playCoinSound();
-                } else if (won.includes("Shield")) {
-                    hasShield = true;
-                    document.getElementById("shieldStatus").innerText = "Active 🛡️";
-                    document.getElementById("shieldStatus").style.color = "#00ffaa";
-                }
-                btn.disabled = false;
-            }, 1500);
-        }
-
-        /* Item Shop Functions */
-        function openShop() {
-            playClickSound();
-            document.getElementById("shopModal").style.display = "flex";
-        }
-
-        function buyShield() {
-            if (hasShield) {
-                alert("You already have an active Shield!");
-                return;
-            }
-            if (coins >= 30) {
-                coins -= 30;
-                hasShield = true;
-                document.getElementById("coinCount").innerText = coins;
-                document.getElementById("shieldStatus").innerText = "Active 🛡️";
-                document.getElementById("shieldStatus").style.color = "#00ffaa";
-                playCoinSound();
-                alert("🛡️ Protection Shield purchased successfully!");
-                closeModals();
-            } else {
-                alert("Not enough coins! Answer questions to earn coins.");
-            }
-        }
-
-        function closeModals() {
-            playClickSound();
-            document.getElementById("spinModal").style.display = "none";
-            document.getElementById("shopModal").style.display = "none";
-        }
-
-        function runFireworksEngine() {
-            const canvas = document.getElementById("fireworks");
-            const ctx = canvas.getContext("2d");
-            
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            window.addEventListener('resize', resize);
-            resize();
-
-            let particles = [];
-            
-            function createFirework(x, y) {
-                const count = 45;
-                const colors = ['#ff0055', '#00ffcc', '#ffcc00', '#ff00ff', '#00ff00', '#00f0ff'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                for (let i = 0; i < count; i++) {
-                    const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5;
-                    const speed = Math.random() * 6 + 2;
-                    particles.push({
-                        x: x, y: y,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        alpha: 1,
-                        color: color
-                    });
-                }
-            }
-
-            function animate() {
-                if (canvas.style.display === "none") return;
-                ctx.fillStyle = 'rgba(7, 7, 25, 0.2)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                particles.forEach((p, index) => {
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += 0.05;
-                    p.alpha -= 0.012;
-                    
-                    if (p.alpha <= 0) {
-                        particles.splice(index, 1);
-                    } else {
-                        ctx.save();
-                        ctx.globalAlpha = p.alpha;
-                        ctx.fillStyle = p.color;
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.restore();
-                    }
-                });
-
-                if (Math.random() < 0.06) {
-                    createFirework(Math.random() * canvas.width, Math.random() * canvas.height * 0.6);
-                }
-
-                requestAnimationFrame(animate);
-            }
-            animate();
+            playSound('click');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('category-screen').classList.remove('hidden');
         }
     </script>
 </body>
